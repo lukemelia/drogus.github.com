@@ -1,0 +1,33 @@
+--- 
+title: Git
+typo_id: 49
+layout: post
+categories: ['pl']
+---
+Jeżeli ktoś jeszcze nie zauważył społeczność frameworków "Ruby on Rails":http://rubyonrails.org i "Merb":http://merbivore.org przesiada się powoli na rozproszony system kontroli wersji "Git":http://git.or.cz/. Na gita przechodzą Railsy, przeszedł już Merb, Rspec, sporo koderów wypuszczających popularne pluginy. Jednym słowem coś w tym musi być.
+
+I rzeczywiście coś w tym jest.
+
+O co chodzi? Jarosław Zabiełło na swoim blogu "przedstawił kilka rozproszonych systemów kontroli wersji":http://blog.zabiello.com/articles/2008/03/19/distributed-vcs.
+
+Jakie są zalety gita?
+
+* każdy posiadający kopię aplikacji posiada też całe repozytorium. Coś się rozwaliło? Trzeba zmienić serwer? Serwis,a na którym hostowałeś SVN'a padł? Smuteczek. Ale nie z gitem - repozytorium, które masz na dysku wystarczy.
+* Git jest dużo szybszy od SVNa
+* "Mobilność" - bardzo ważna dla mnie kwestia. Często wyjeżdżam i zdarza mi się pracować bez dostępu do netu. W przypadku SVNa musiałem wrzucić jeden mega commit z pierdylionem zmian. W przypadku gita commity lecą do repozytorium na dysku i później można je ewentualnie pchnąć (push) do publicznego repo.
+* Bardzo łatwa obsługa gałęzi. Pracując z gitem najlepiej wyrobić sobie nawyk tworzenia gałęzi przy każdej zmianie, lub grupie połączonych ze sobą zmian. Dzięki  temu można pracować równolegle nad wieloma rzeczami nie zaśmiecając aplikacji. Później tylko łączymy gałęzie, które rzeczywiście są potrzebne, jeżeli coś nie wyjdzie można po prostu daną gałąź wyrzucić i po krzyku
+* dużo łatwiejsze wrzucanie zmian do projektów open source'owych, szczególnie z pomocą githuba (ale o tym za chwilę).
+
+Ale kod leżący cały czas na dysku będzie mało przydatny. Dlatego można założyć sobie publiczne repozytorium. Stwierdziłem jakiś czas temu, że w trosce o swój czas, którego zawsze za mało, będę musiał ograniczyć wszelkie prace, których mogę stosunkowo łatwo uniknąć. Dlatego nie bawiłem się nawet w tworzenie swojego własnego publicznego repozytorium. Wygodniej skorzystać pracy innych ludzi ;-)
+
+Obecnie najbardziej popularne (jedyne?) serwisy oferujące hosting repozytoriów gita to: "GitHub":http://github.org i "Gitorius":http://gitorius.org. Gitorius jest w pełni darmowy, ale nie można na nim trzymać prywatnych repozytoriów. Na githubie za darmo można trzymać publiczne repozytoria (ogranicza nas 100mb - jeżeli chodzi o gita to bardzo dużo), za prywatne trzeba będzie zapłacić. Na razie można jeszcze korzystać za darmo, bo serwis jest w fazie beta.
+
+Zarejestrowałem się na Githubie kilka dni temu i przeniosłem tam 2 ze swoich projektów. Github to bardzo fajny pomysł na stworzenie społeczności koderów (napisany oczywiście w railsach). Co daje taki serwis?
+
+* dostęp do rss'ów poszczególnych użytkowników, projektów, feed z wiadomościami z obserwowanych projektów
+* można jednym kliknięciem zrobić kopię aplikacji (fork) - jakie są tego korzyści opisał na blogu jeden z developerów merba Michael Ivey :"Contributing to merb":http://gweezlebur.com/2008/2/9/contributing-to-merb-part-2
+* można wysłać znajomym "pull request" - czyli prośbę o uaktualnienie, na przykład po ważnej aktualizacji
+
+Dodatkowo dostajemy wszystkie zalety gita. 
+
+No to co? Przesiadka na jasną stronę mocy, z tego fuj fuj obleśnego i niefajnego SVNa, który tak chwaliłem kiedy się z nim zapoznałem ;-)

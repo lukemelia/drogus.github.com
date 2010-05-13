@@ -1,0 +1,25 @@
+--- 
+title: "Ksi\xC4\x85\xC5\xBCki"
+typo_id: 28
+layout: post
+categories: ['pl']
+---
+Zdarza mi się ostatnimi czasy przeczytać komentarz, że książki programistyczne są już niepotrzebne, bo i tak wszystko jest w necie. A nawet, cytuję: "w książkach to jest naćkane, jak chcesz konkretów to nie kupuj książek". 
+
+Całkiem głupie to ;-)
+
+Dla mnie książki programistyczne są niezastąpione. I najchętniej kupiłbym sobie połowę pozycji dostępnych na rynku. Po czym prawdopodobnie 1/3 bym nie przeczytał, ale to już inna kwestia. Ogólnie rzecz biorąc większości rzeczy zawartych w książkach można pewnie nauczyć się samemu, z lekką pomocą wujka Googla. Ale o ile przyjemniej przeczytać jak to robią profesjonaliści (o ile nikt nie da się nabrać niektórym "profesjonalistom inaczej":http://helion.pl/ksiazki/cruby.htm)
+
+Po takim wstępie nie mogę się nie pochwalić, że jakiś czas temu kupiłem wspólnie z ludźmi od nowego projektu (na razie nie zapeszam. za jakiś czas pewnie coś napiszę) parę bardzo fajnych książek.
+
+* "Don't make me think":http://www.amazon.com/Dont-Make-Me-Think-Usability/dp/0321344758/ref=pd_bbs_sr_1/103-1673275-3760642?ie=UTF8&s=books&qid=1188647369&sr=8-1 - genialna książka o usability. Bardzo krótka i treściwa. Autor starał się napisać książkę, którą będzie się dało przeczytać w parę godzin. I muszę przyznać, że bardzo dobrze mu to wyszło. Idealna dla ludzi, którzy nie są specami w tej kwestii, a chcą poprawić użyteczność swoich stron.
+
+* "Agile development with Rails":http://www.amazon.com/Agile-Development-Rails-Pragmatic-Programmers/dp/0977616630/ref=pd_bbs_sr_2/103-1673275-3760642?ie=UTF8&s=books&qid=1188647391&sr=8-2 - Pozycja obowiązkowa dla uczących się RoR. Co prawda teraz niewiele mi się przyda, ale czułbym się źle jakby jej nie kupił. Korzystałem dość sporo z ebooka z amule'a. No i przyda się "bliźniemu":http://sarniak.blogspot.com, który właśnie zaczyna się uczyć RoR.
+
+* "Ruby for Rails":http://www.amazon.com/Ruby-Rails-Techniques-Developers/dp/1932394699/ref=pd_bbs_sr_1/103-1673275-3760642?ie=UTF8&s=books&qid=1188647391&sr=8-1 - jeszcze nie przeczytałem, ale po przekartkowaniu zapowiada się bardzo ciekawie. Napiszę coś więcej jak wreszcie się za nią wezmę ;-)
+
+* "The Ruby Way":http://www.amazon.com/Ruby-Way-Second-Addison-Wesley-Professional/dp/0672328844/ref=pd_bbs_sr_1/103-1673275-3760642?ie=UTF8&s=books&qid=1188647417&sr=8-1 - bardzo dobra książka. Jestem właśnie w trakcie czytania. Podaje bardzo dużo rozwiązań często spotykanych problemów zgddnie z "ruby way". Ponad 600 stron esencji programowania ;-)
+
+* "JavaScript: The Definitive Guide":http://www.amazon.com/JavaScript-Definitive-Guide-David-Flanagan/dp/0596101996/ref=pd_bbs_sr_1/103-1673275-3760642?ie=UTF8&s=books&qid=1188647405&sr=8-1 - niektórzy narzekają, że książka bardziej zbliżona jest do dokumentacji niż do książki "do nauki". Dla mnie to plus. Javascripta znam całkiem dobrze. Pewnie dzięki temu, że w poprzednim stuleciu, kiedy o bibliotekach takich jak jQuery nikt nie słyszał, bawiłem się w pisanie różnego rodzaju latających warstw, wysuwanych menu i innych arkanoidów (nawet fajnie się grało ;-). W tym momencie potrzebuję właśnie takiej dokumentacji, do której mogę spojrzeć podczas pisania i zobaczyć jakie metody udostępnia dana klasa, albo jak powinien się zachowywać jakiś kod. Jeżeli ktoś chce pisać coś więcej niż efekty z użyciem jQuery (czy innego script.aculo.us), to naprawdę zachęcam do kupna.
+
+Podejrzewam, że gdyby początkujący programiści więcej inwestowali w wiedzę książkową to byłoby dużo mniej partactwa. Szczególnie, że książki związane z Rubim i RoR oprócz nauki programowania próbują od początku wpajać dobre praktyki programistyczne. I koniecznie trzeba przeczytać "Pragmatycznego programistę":http://www.merlin.com.pl/frontend/browse/product/1,299928.html :)  

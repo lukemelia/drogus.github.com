@@ -1,0 +1,17 @@
+--- 
+title: "Po d\xC5\x82u\xC5\xBCszej przerwie"
+typo_id: 53
+layout: post
+categories: ['pl']
+---
+Przez jakiś czas nie pisałem nic na blogu. Długo zbierałem się do napisania czegokolwiek, od dawien dawna miałem przetłumaczyć wpisy na moim "angielskojęzycznym blogusiu":http://drogomir.com/blog. Tak bardzo mi się nie chciało, że jak tylko siadałem do kompa z zamiarem przetłumaczenia czy napisania czegoś podobnego coś mnie odrzucało.
+
+Dlatego, żeby więcej się nie męczyć podsumuję ten temat i podam linki - większość ludzi, którzy tutaj trafią i tak na pewno zna angielski.
+
+"Napisałem apache upload progress module":http://github.com/drogus/apache-upload-progress-module/tree/master do apacha. Moduł, dzięki któremu można pobrać dane o wysyłanych plikach. Format odpowiedzi oparłem o moduły tego typu dla "nginxa":http://wiki.codemongers.com/NginxHttpUploadProgressModule i "lighttpd":http://upload.lighttpd.net/index.html dlatego jeżeli wcześniej ktoś używał któregoś z nich, przesiadka będzie całkowicie bezbolesna. Sam używałem wcześniej nginx upload progress (głównie dlatego napisałem moduł do apacha) i po przerzuceniu aplikacji na apacha z nowym modułem nie trzea było zmieniać ani jednej linijki. Na angielskim blogu zamieściłem opis "instalacji i konfiguracji modułu":http://drogomir.com/blog/2008/6/18/upload-progress-bar-with-mod_passenger-and-apache.
+
+Żeby można było w miarę łatwo używać modułu napisałem także pluginy do "prototype'a"http://github.com/drogus/prototype-upload-progress/tree/master i "jquery":http://github.com/drogus/jquery-upload-progress/tree/master, które obsługują pasek postępu. Przykłady są w repozytoriach, umieściłem je także "na serwerze":http://drogomir.com/files/blog/jquery-upload-progress/example/ dla obczajenia w akcji. Popełniłem także tekst o tym "jak hackowałem plugin, żeby działał w safari":http://drogomir.com/blog/2008/6/30/upload-progress-script-with-safari-support - safari w tym momencie nie było wcale lepsze od IE... nawet powiedziałbym, że gorsze. Swoją drogą plugin nie działa w najnowszej operze (działał w 9.5 zdaje się), więc jeżeli ktoś ma chwile czasu i mógłby sprawdzić dlaczego i co można zrobić, żeby działał, to może wnieść swój wkład w rozwój (dodam, że nie jest to ta sama kwestia co dla safari, bo to już sprawdziłem) - nie sądzę żebym miał teraz czas sam na tym siedzieć.
+
+Dodatkowo napisałem jeszcze tekst o tym jak można fajnie "uatrakcyjnić aplikację używając jQuery":http://drogomir.com/blog/2008/7/3/tweaking-rails-app-with-jquery-part-i. Część pierwsza. Część druga będzie jak będę miał więcej czasu, czyli pewnie niezbyt szybko.
+
+Pozdrowienia ze słonecznego Wrocławia, gdzie mam zamiar mieszkać przez najbliższy rok (miła odmiana od Pruszkowa :).

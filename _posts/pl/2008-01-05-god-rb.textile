@@ -1,0 +1,100 @@
+--- 
+title: God.rb
+typo_id: 35
+layout: post
+categories: ['pl']
+---
+Wpadłem jakiś czas temu na bardzo fajną aplikację wspomagającą deployment "Ruby on Rails":http://rubyonrails.org. "god.rb":http://god.rubyforge.org/ monitoruje procesy i w razie potrzeby (out of memory, zbyt dużo pożartego cpu, pad serwera) restartuje je. Config, jak i sam god oczywiście, jest napisany w Ruby'im, więc można sobie nieco ułatwić pracę (wspominałem kiedyś, że nigdy nie miałem dość samozaparcia, żeby się nauczyć pisać skrypty powłoki pod linuxem?). 
+
+Aby go zainstalować należy jako root (pod ubuntu sudo) wykonać polecenie:
+
+{% highlight bash %}
+gem install god
+{% endhighlight %}
+
+Na stronie goda są podane różne configi, ale nie zakładają one scenariusza: "sporo aplikacji, taki sam config, jak to zrobić automatycznie?". Pomyślałem sobie, że napiszę prosty config, który będzie pobierał listę aplikacji Rails z pliku i dodawał mongrele do monitorowania. Gdy na serwerze siedzi więcej aplikacji głupio byłoby kopiować config dla każdej z nich i ręcznie ustawiać numery portów i katalogi.
+
+Pełny config z komentarzami wyjaśniającymi o co kaman ("wersja tekstowa":http://drogomir.com/god.txt):
+{% highlight ruby %}
+# run with:  god -c /path/to/config.god
+
+require 'yaml'
+
+# otwieramy plik ze spisem aplikacji i robimy z nich tablicę
+rails_apps = File.open("/etc/god/applications", "r").readlines.collect { |app| app.strip }
+
+for rails_app in rails_apps
+  # załadujmy ustawienia danej aplikacji
+  # korzystać będziemy z konfiguracji dla clusterów
+  config = YAML::load(File.open(File.join(rails_app, "config/mongrel_cluster.yml")))
+  config["servers"] ||= 1 # domyślnie startujemy jeden serwer
+  
+   # teraz stawiamy mongrela dla każdego portu
+  ((config["port"].to_i)..(config["port"].to_i+config["servers"].to_i-1)).each do |port|  
+    God.watch do |w|
+      pid_file = File.join(rails_app, config["pid_file"].gsub(/\.pid$/, ".#{port}.pid"))
+      w.name = "#{rails_app[/[^\/]*$/]}-mongrel-#{port}"
+      
+      # dodajemy mongrele danej aplikacji do grupy o nazwie takiej samej jak nazwa katalogu
+      w.group = "#{rails_app[/[^\/]*$/]}"
+      w.interval = 30.seconds # default      
+      w.start = "mongrel_rails start -c #{rails_app} -p #{port} \
+        -P #{pid_file}  -e #{config['environment']}  -d"
+      w.stop = "mongrel_rails stop -P #{pid_file}"
+      w.restart = "mongrel_rails restart -P #{pid_file}"
+      w.start_grace = 10.seconds
+      w.restart_grace = 10.seconds
+      w.pid_file = File.join(pid_file)
+      
+      w.behavior(:clean_pid_file)
+  
+      w.start_if do |start|
+        start.condition(:process_running) do |c|
+          c.interval = 5.seconds
+          c.running = false
+        end
+      end
+      
+      w.restart_if do |restart|
+        restart.condition(:memory_usage) do |c|
+          c.above = 150.megabytes
+          c.times = [3, 5] # 3 out of 5 intervals
+        end
+      
+        restart.condition(:cpu_usage) do |c|
+          c.above = 50.percent
+          c.times = 5
+        end
+      end
+      
+      # lifecycle
+      w.lifecycle do |on|
+        on.condition(:flapping) do |c|
+          c.to_state = [:start, :restart]
+          c.times = 5
+          c.within = 5.minute
+          c.transition = :unmonitored
+          c.retry_in = 10.minutes
+          c.retry_times = 5
+          c.retry_within = 2.hours
+        end
+      end
+      
+    end
+  end
+end
+
+puts "kuniec"
+{% endhighlight %}
+
+Aplikacje w pliku, który jest odczytywany na początku to ścieżki wpisane w kolejnych liniach. gdy wystartujemy goda poleceniem `god -c /sciezka/do/configu` uruchomią się mongrele dla wszystkich aplikacji. Ważne: powyższy config korzysta z konfiguracji stworzonych dla clusterów. Aby ją stworzyć należy wykonać w katalogu aplikacji:
+
+{% highlight bash %}
+mongrel_rails cluster::configure -e production -p 8000 -N 2
+{% endhighlight %}
+
+Powyższa komenda wygeneruje plik `mongrel_cluster.yml` w katalogu config aplikacji Ruby on Rails. Zostanie ustawione środowisko production, port 8000 i 2 serwery (na portach 8000 i 8001). 
+
+Żeby szczęście było pełne i niczym niezmącone można jeszcze pokusić się o napisanie skryptu startowego init.d. Oczywiście w ruby'im. A jakie to proste "pokazywał kiedyś Jarek Zebiełło":http://blog.zabiello.com/articles/2006/09/29/uniksowy-skrypt-etc-init-d-w-ruby. 
+
+W razie wątpliwości pytajcie o szczegóły w komentarzach.

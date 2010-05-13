@@ -1,0 +1,58 @@
+--- 
+title: Dlaczego jQuery?
+typo_id: 27
+layout: post
+categories: ['pl']
+---
+Jako javascriptowego frameworka (z góry przepraszam _ukrytych purystów językowych_ za brutalne "wrzucanie spolszczonych angielszczyzmów":http://www.nierobcietegowdomu.pl/wpisy/o-jezyku-polskich-blogow - w razie czego proszę o wersję przetłumaczoną w komentarzu, trochę humoru zawsze się przyda) przez długi czas używałem zestawu "prototype":http://www.prototypejs.org/ + "script.aculo.us":http://script.aculo.us/. Po krótkim czasie przywiązałem się i stwierdziłem, że nie ma sensu sprawdzać innych możliwości
+* bo i tak większość frameworków oferuje podobne możliwości
+* będę musiał stracić czas na nauczenie się czegoś nowego
+* Ruby on Rails wspiera powyżej wymieniony zestaw
+
+Właściwie to "wybranie" prototype'a było bezpośrednim następstwem ostatniego punktu. Pomyślałem, że skoro DHH wybrał ten framework, to coś w tym musi być. Podejrzewam, że w rzeczywistości było to spowodowane tym, że jQuery miał w tamtym okresie małą popularność (o ile w ogóle istniał). Patrząc na to jak wyglądają obie biblioteki można odnieść wrażenie, że filozofię dużo bliższą Railsom realizuje jQuery.
+
+Najlepiej to widać patrząc na przykłady:
+
+prototype:
+
+{% highlight javascript %}
+  new Ajax.Updater('id', url, { method: 'get', parameters: par });
+  var anchors = document.getElementsByTagName('a');
+    for (var i=0; i<anchors.length; i++)
+    {
+        var anchor = anchors[i];
+        var relAttribute = String(anchor.getAttribute('rel'));
+        if (relAttribute.toLowerCase().match('history'))
+        {
+            Event.observe(anchor, 'click', function(){
+              //siakaś funkcja
+             });
+        }
+    }
+{% endhighlight %}
+
+jQuery:
+
+{% highlight javascript %}
+  $('#id').load(url + par);
+  $("a[@rel='history']").click(function(){
+    //siakaś funkcja
+  });
+{% endhighlight %}
+
+Od razu widać po której stronie stoi przejrzystość (i jasna strona mocy). Ten drugi przykład może nie być już aktualny, bo ostatnio programiści prototype wzięli się do roboty i co jakiś czas zamieszczają wiadomości o zmianach w API, ale takich kawałków można wkleić dużo więcej. Wszystko idzie w dobrą stronę, ale nie wiem czy uda się w niedalekiej przyszłości uzyskać lekkość jQuery.
+
+Ruby on Rails niestety nie mają wsparcia dla jQuery, ale "nie jest tak źle":http://mad.ly/2007/05/17/jquery-ajax-rails/. Selektor elementów w RJS'ach dalej będzie działał, resztę kodu można wrzucać bezpośrednio poprzez `page <<`, a brak helperów? Możnaby je przepisać (i zapewne ktoś już to zaczął robić). Aczkolwiek pojawiają się głosy, że "domyślne helpery w RoR są krnąbrne oraz złe":http://jlaine.net/2007/8/3/from-rails-ajax-helpers-to-low-pro-part-i. Po części całkiem słusznie. Z drugiej strony w niektórych aplikacjach nie ma sensu robić obsługi bez javascriptu (jakieś rozbudowane interfejsy użytkownika), a podobno "używanie event handlerów jest wolniejsze niż zwykły onclick":http://ajaxian.com/archives/joseph-smarr-%e2%80%9chigh-performance-javascript-why-everything-you%e2%80%99ve-been-taught-is-wrong%e2%80%9d. Jak zwykle wszystko zależy od zastosowań i potrzeb. Ciężkie jest życie programisty. Kiedyś padnę na zawał od takiego nawału trudnych decyzji do podjęcia ;)
+
+Jako dalszą lekturę polecam "propagandę na blogu jQuery":http://jquery.com/blog/2006/08/20/why-jquerys-philosophy-is-better/ i "doniesienia o nowej wersji":http://jquery.com/blog/2007/08/24/jquery-114-faster-more-tests-ready-for-12/, gdzie można podziwiać wyniki zabiegów optymalizacyjnych i sporo nowych mechanizmów. Całkiem niedawno "jQuery doczekało się książki":http://jquery.com/blog/2007/04/18/learning-jquery-book-details/. Dużym plusem jest też "ogromna ilość rozszerzeń":http://docs.jquery.com/Plugins. Lista wygląda imponująco.
+
+Jedyne co mnie ostatnio zaniepokoiło to przesiadka z jQuery na prototype, o której mówi "Zbigniew Sobiecki w wywiadzie":http://jarmark.org/post/druga-twarz-blipa/. Jego doświadczenie widać najlepiej patrząc na blipa, więc jakieś powody musi mieć. Będę musiał to zbadać ;)
+
+W każdym razie w tym momencie moim frameworkiem javascriptowym "of choice" jest jQuery. Jeżeli ktoś zna argumenty przemawiające za pozostaniem przy prototype i script.aculo.us niech się nie krępuje i zostawi komentarz.
+
+Dopisane:
+Znalazłem wczoraj fajne "narzędzie do benchmarków":http://mootools.net/slickspeed/. Niestety wersje bibliotek nie są najnowsze, co owocuje "cienkimi wynikami jQuery":http://blog.drogomir.com/files/benchmark.old.png, ale na szczęście jest link do źródeł, więc można "wrzucić swoje wersje":http://blog.drogomir.com/files/benchmark.new.png (ostatnie stabilne wersje jQuery i prototype). Jak widać na obrazkach twórcy jQuery włożyli ogromną ilość pracy w optymalizację, ale cały czas jeszcze trochę brakuje, żeby dogonić prototype.
+
+Rozmawiałem wczoraj ze "sztywnym":http://stifflog.com na "blipie":http://beta.blip.pl (jest teraz jednym z developerów blipa). Zwrócił mi uwagę na parę rzeczy, które mi umknęły. Jedną z nich jest brak rozszerzeń dla obiektów istniejących już w javascripcie. Prototype udostępnia bardzo dużo metod, wzorowanych głównie na metodach rubiego, które ułatwiają pracę z typami wbudowanymi (wszelkie iteratory typu collect, each, any, all, różne metody dla klasy String, hashe itp. itd.). Szczerze mówiąc nawet nie pomyślałem, że nic podobnego nie ma w jQuery - przerzuciłem się dosłownie parę dni temu i nie pisałem nic większego. W takim momencie trzeba zadać sobie pytanie co jest priorytetem w danym projekcie. Oczywiście warto znać obie biblioteki, ale niestety do danego zadania trzeba wybrać jedną z nich (teoretycznie nic nie stoi na przeszkodzie, żeby załączyć obie, dzięki jQuery.noConflict, ale trzeba się liczyć z dodatkowymi kilobajtami).
+
+Przejrzałem dodatkowo bloga prototypa i pojawia się cały czas sporo fajnych rzeczy. Myślę, że przy wyborze między tymi dwoma bibliotekami trzeba pomyśleć czy bardziej przydatne będą efekty wizualne i ogólnie grzebanie w CSS i DOM, czy stawiamy na pisanie różnych funkcji "niższego poziomu". Najgorsze jest to, że wydaje mi się, że w projekcie, który zaczynam będzie się to rozkładało mniej więcej po połowie. Coś czuję, że wrócę jeszcze do tego tematu.

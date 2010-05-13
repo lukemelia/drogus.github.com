@@ -1,0 +1,71 @@
+--- 
+title: Otwarte klasy w Rubim i ich praktyczne wykorzystanie
+typo_id: 37
+layout: post
+categories: ['pl']
+---
+Ruby posiada bardzo fajną właściwość nazwaną otwartymi klasami. Znaczy to tyle, że jeżeli nikt nie zamroził danej klasy/metody, można w dowolnym miejscu w kodzie nadpisać ją klasę, metodą, dodać nowe metody. Można tak nadpisać nawet klasy wbudowane w język!
+
+Na przykład taki kod (och jak ja lubię ten przykład):
+
+{% highlight ruby %}
+class Fixnum
+  alias old_plus +
+
+  def +(other)
+    (self.old_plus other) % 7
+  end
+end
+
+4+4 #=> 1
+{% endhighlight %}
+
+4+4=1 ? nie tego się spodziewaliśmy. A właściwie nie tego się spodziewali ludzie, którzy nie rozumieją jeszcze powyższego przykładu (celowo dodałem słowo jeszcze, będę na tyle cywilizowanym i miłym człowiekiem, że spróbuję wytłumaczyć o co chodzi).
+
+Liczby całkowite są klasy Fixnum. Powyższy kod modyfikuje tą klasę. Najpierw tworzony jest alias dla metody +, żeby można było jej później używać, a następnie owa metoda zostaje nadpisana w taki sposób, żeby zwracała wynik "dodawania modulo7":http://pl.wikipedia.org/wiki/Arytmetyka_modularna
+
+Do napisania tego artykułu natchnął mnie Daniel Owsiański pisząc o zjawisku roboczo nazwanym "version lock-in":http://jarmark.org/post/nie-ma-darmowych-obiadow/. Daniel ma oczywiście dużo racji i moja paranoja, o której pisałem u niego w komentarzach jest objawem przewrażliwienia mojej mózgoczaszki w pewnych kwestiach. Są jednak wypadki, w których naprawdę warto zachować zgodność z nowymi wersjami. Pomaga tutaj powyższa właściwość języka Ruby. Pisał o tym kiedyś autor bloga "Err the Blog":http://errtheblog.com/ w kontekście "rozszerzania możliwości pluginów":http://errtheblog.com/posts/67-evil-twin-plugin.
+
+Często w rozmowach o Ruby on Rails na różnych listach dyskusyjnych można usłyszeć, że gdy chcemy coś zmienić w danej metodzie, najlepiej przekopiować kod metody, nadpisać ją, zmienić to co trzeba i voilla. Ale nie tędy droga panie i panowie :)
+
+Wyglądałoby to mniej więcej tak. Chcemy na przykład nadpisać metodę find. Wchodzimy na "Rails API":http://api.rubyonrails.org, znajdujemy ActiveRecord::Base#find, wklejamy kod w modelu i zmieniamy:
+
+{% highlight ruby %}
+#w modelu:
+def self.find(*args)
+  #jakiś zmodyfikowany kod finda
+end
+{% endhighlight %}
+
+Jakie minusy ma takie podejście? Gdy mamy zainstalowaną dużą liczbę pluginów nigdy nie wiadomo czy któryś z nich nie nadpisuje już metody find i wtedy nadpisując ją stracimy funkcjonalność dodaną przez plugin. Smuteczek. Poza tym gdy zmieni się kod metody find w samym frameworku również u nas będziemy musieli go zmienić.
+
+Jak to zrobić Ruby Way(tm)? Przypuśćmy, że chcemy się popastwić nad wspomnianą metodą find:
+
+{% highlight ruby %}
+#w modelu:
+
+# metoda find jest metodą klasy
+class << self
+  def find(*args)
+    args[1] ||= {}
+    args[1][:conditions] ||= {} 
+    args[1][:conditions] = [args[1][:conditions]] if args[1][:conditions].is_a?(String)
+    case args[1][:conditions]
+      when Hash: 
+        args[1][:conditions].merge!(:deleted => false)
+      when Array:
+        if args[1][:conditions][0].strip.blank?
+          args[1][:conditions][0] = "deleted = ?"
+        else
+          args[1][:conditions][0] = ["(#{args[1][:conditions][0]})", "deleted = ?"].join(' AND ')
+        end
+        args[1][:conditions] << false       
+    end
+    super(*args)
+  end
+end
+{% endhighlight %}
+
+Powyższy kod dodaje do conditions warunek "deleted = false", po czym wywołuje metodę find z tak zmodyfikowanymi argumentami. Czasami trzeba jednak namieszać coś w kodzie metody. Można wtedy dodać dodatkowy argument. Następnie dajemy ifa - jeżeli argument zwraca true wykonujemy zmodyfikowany kod, a jeżeli nie, wykonujemy kod oryginalnej metody. 
+
+Dzięki takiemu podejściu możemy w miarę łatwo upgradować pluginy i Railsy bez większego stresu :)

@@ -1,0 +1,15 @@
+--- 
+title: Thin. Nowy lepszy mongrel. Sphinx. Nowy lepszy ferret.
+typo_id: 36
+layout: post
+categories: ['pl']
+---
+Jak donosi "Ruby Inside":http://rubyinside.com, wypuszczony został ostatnio "serwer szybszy od mongrela":http://www.rubyinside.com/thin-a-ruby-http-daemon-thats-faster-than-mongrel-688.html.
+
+Chodzi o Thin, czyli połączenie EventMachine, Racka (interfejs do komunikacji z serwerem) i Mongrela (a dokładniej jego bibliotek do parsowania). Instalacja i użycie jest równie łatwe co użycie samego mongrela. `gem install thin`, a później w katalogu aplikacji `thin start`. Jedna z moich aplikacji wyciągała na mongrelu 110req/s, a na thinie około 150req/s (ab -c 10 -n 100). Różnica całkiem spora. Warto się przesiąść
+
+Sprawdziłem też ostatnio sphinxa. O "sphinxie pisał już Jarosław Zabiełło":http://blog.zabiello.com/articles/2007/11/30/sphinx-merb-vs-ferret-rails i bardzo mnie powyższym artykułem zainteresował. Do tej pory używałem ferreta, ale odpalanie nie do końca stabilnych i niezbyt szybkich serwerów dla każdej aplikacji było trochę uciążliwe. "Ezra Zygmuntowicz":http://brainspl.at, twórca frameworka "Merb":http://merbivore.com wypowiadał się, że miał dość duże kłopoty ze stabilnością ferreta, które skończyły się po przejściu na sphinxa.
+
+Instalacja opisana jest "w dokumentacji":http://blog.evanweaver.com/files/doc/fauna/ultrasphinx/files/README.html, więc nie będę powtarzał :) Mogę dodać jedynie, że czasami używając bazy postgresql trzeba ręcznie dodać language poleceniem `createlang plpgsql nazwa_bazy` (chodzi o nowy język proceduralny dla postgresa). Serwer odpalony przez sphinxa jest bardzo wydajny i zajmuje kilkadziesiąt razy mniejsze ilości pamięci operacyjnej. Jedynym minusem jest to, że nie ma niektórych opcji, które posiada ferret - jeżeli ktoś ich potrzebuje proponuję sprawdzenie Solr.
+
++Zapomniałem wspomnieć, że ultrasphinx działa z bazami postgresql >= 8.2+ 

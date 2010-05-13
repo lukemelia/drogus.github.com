@@ -1,0 +1,11 @@
+--- 
+title: HotRuby
+typo_id: 48
+layout: post
+categories: ['pl']
+---
+Jakiś czas temu pojawiły się "wzmianki":http://ajaxian.com/archives/hotruby-run-ruby-on-a-javascript-interpreter "o hotruby":http://www.rubyinside.com/hotruby-a-javascript-flash-virtual-machine-that-runs-ruby-821.html (tylko wtedy nie miałem czasu o tym napisać). Krótko mówiąc jest to "implementacja rubiego w javascripcie". Możemy używać rubiego w przeglądarce i we flashu.
+
+Kod rubiego jest wysyłany do skompilowania przez skrypt cgi, skrypt cgi kompiluje go do bytecodu, po czym javascript wykonuje ów bytecode.
+
+Na stronie "HotRuby":http://hotruby.accelart.jp/ jest wzmianka o tym, że składnia języka jest w większości zaimplementowana (na pewno nie ma wyjątków), ale jak na razie większość funkcji i bibliotek nie. Na razie nie wiem do czego mogłoby mi się takie połączenie przydać, ale patrząc na dema łatwo można zauważyć, że całkiem fajne rzeczy da się stworzyć z pomocą hotrubiego. Oby tak dalej.

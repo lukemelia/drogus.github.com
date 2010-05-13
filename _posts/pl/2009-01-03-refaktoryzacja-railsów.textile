@@ -1,0 +1,17 @@
+--- 
+title: "Refaktoryzacja Rails\xC3\xB3w"
+typo_id: 57
+layout: post
+categories: ['pl']
+---
+Niestety nie będzie to wpis o tym jak refaktoryzować swoją aplikację, ale raczej post o refaktoryzacji samego frameworka w ramach przygotowań do Rails 3.
+
+"Railsy pożarły mózg Merba i posiądą jego tajemne moce":http://railsenvy.com/2008/12/31/rails-envy-podcast-episode-061-12-31-2008 (zachęcam do wysłuchania tego podcastu, chłopaki od railsenvy genialnie mówią o tym co się dzieje w świecie railsów) - o tym już "każdy na pewno wie":http://nhw.pl/pl/2008/12/rails-i-merb-w-jednym-staly-domu. Czy to dobrze? Oczywiście, że tak :)
+
+Jeżeli ktoś dalej ma problemy z tą decyzją (podejrzewam, że może tak być w wypadku fanów merba), polecam prezentacją "Living with legacy software":http://railsconfeurope.blip.tv/file/1555560/ wygłoszoną przez Davida Heinemeiera Hanssona - nie jest w żaden sposób bezpośrednio związana z połączeniem, ale zmienia podejście do aplikacji i ich kodu.
+
+"Ale nie o to, nie o to, nie o to":http://www.youtube.com/watch?v=UwI307EC63c&feature=related
+
+"Yehuda Katz":http://yehudakatz.com/ ostro wziął się do pracy jeszcze podczas świąt i co jakiś czas wrzuca na bloga informacje o tym jak refaktoryzuje i jakie ma plany wobec Railsów. Informacje traktujące o projektowaniu, refaktoryzacji i architekturze ciężko jest znaleźć w sieci, więc gorąco polecam śledzenie tego co pisze Yehuda - do tej pory można przeczytać między innymi o enkapsulacji ActionView i ActionController czy o optymalizacji respond_to. Dodajcie sobie tego bloga do czytnika, naprawdę warto.
+
+Co najlepsze, wiele z tych zmian dotyka tylko wewnętrznej implementacji railsów, więc można liczyć, że będą one dostępne dla ruby on rails 2.3.0.

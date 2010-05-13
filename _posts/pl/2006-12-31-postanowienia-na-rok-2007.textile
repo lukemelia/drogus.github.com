@@ -1,0 +1,20 @@
+--- 
+title: Postanowienia na rok 2007
+typo_id: 10
+layout: post
+categories: ['pl']
+---
+A jakże ;-) 
+
+* napisać wreszcie i wypuścić jeden (może więcej?) z serwisów, na które mam pomysły. sporo tego jest, w większości serwisy niszowe i dość hermetyczne połączone z moimi zainteresowaniami. głównie na zasadzie: a gdybym tak miał możliwość.... (takie moje egoistyczne pobudki :) )
+* uporządkować sprawy na uczelni (czyt. zaliczyć zaległe egzaminy, laborki, ćwiczenia)
+* w kwestii nauki i poznawania nowych narzędzi:
+** zostać guru w Rubim i Railsach ;)
+** może Python i Django?
+** Java - w stronę programowania na PDA itp.
+** poznać lepiej JavaScript - żeby nie ograniczać się tylko do tego co oferują biblioteki typu Prototype/Scriptaculous, czy niezbyt wyrafinowane skrypty napisane przezemnie
+** Google Maps
+* wyremontować "Misia Yogiego":http://www.mis.org.pl/misie-w-polsce/yogi/
+* więcej czasu poświęcać bliskim :) (coś czuję, że ostatnio zaniedbuję znajomych bardziej niż zwykle)
+
+Na razie nic więcej nie przychodzi mi do głowy. Pozostaje mi tylko życzyć wszystkiem szczęśliwego nowego roku :)

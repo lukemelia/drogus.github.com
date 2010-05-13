@@ -1,0 +1,19 @@
+--- 
+title: 2 przydatne rzeczy w gicie
+typo_id: 50
+layout: post
+categories: ['pl']
+---
+Usuwanie gałęzi ze zdalnego repozytorium:
+
+{% highlight bash %}
+git push {repository} :heads/{your_branch_here}
+{% endhighlight %}
+
+Usuwanie pliku z indexu bez usuwania go z systemu plików (przydatne gdy dodamy do .gitignore plik, który już istnieje):
+
+{% highlight bash %}
+git-update-index --force-remove sciezka/do/pliku
+{% endhighlight %}
+
+Taki szybki pościk ;-)

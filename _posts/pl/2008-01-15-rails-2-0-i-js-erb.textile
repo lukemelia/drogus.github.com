@@ -1,0 +1,42 @@
+--- 
+title: Rails 2.0 i js.erb
+typo_id: 42
+layout: post
+categories: ['pl']
+---
+Niedawno pisałem o "nieinwazyjnym kodzie javascript w railsach":http://blog.drogomir.com/articles/2007/12/25/nieinwazyjny-javascript-razem-z-ruby-on-rails. Wspomniałem tam o pluginie MinusMor, który dodaje pliki ejs. Czyli kod javascript parsowany erbem. Zainstalowałem plugin w mojej aplikacji przeniesionej na rails 2.0. Kod pluginu nie działa... zacząłem przeglądać kod railsów, żeby poprawić minusmor (w internecie nie mogłem znaleźć poprawki). Po chwili przemyślenia sprawdziłem co dzieje się gdy wyrzucę plik rjs. Komunikat o błędzie:
+
+{% highlight ruby %}
+Missing template pages/index.js.erb in view path
+{% endhighlight %}
+
+Git! W railsach 2.0 możemy przecież wskazać jakiego parsera mają użyć.
+
+Tworzymy plik index.js.erb. I jeszcze mała zmiana, ustawiamy brak layoutu, żeby renderował się sam template:
+
+{% highlight ruby %}
+respond_to do |format|
+  render.html
+  render.js { render :layout => false }
+end
+{% endhighlight %}
+
+I to wszystko! Po prostu działa.
+
+Nawet lepiej. Można zdefiniować layout, na przykład: 
+
+{% highlight ruby %}
+render.js { render :layout => 'jquery' }
+{% endhighlight %}
+
+a w nim można na przykład napisać:
+
+{% highlight javascript %}
+(function ($) {
+  <%= yield %>
+})(jQuery);
+{% endhighlight %}
+
+I można używać w template'ach js.erb $ pomimo tego, że wcześniej użyło się jQuery.noConflict.
+
+Przeszukałem później jeszcze net w poszukiwaniu informacji na ten temat i znalazłem artykuł na mad.ly o "dodaniu helperów z MinusMor":http://mad.ly/2007/11/02/javascript-embedded-ruby-templates-with-rails-out-of-the-box/#more-7

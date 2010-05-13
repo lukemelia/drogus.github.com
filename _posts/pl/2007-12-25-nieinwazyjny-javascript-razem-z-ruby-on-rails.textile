@@ -1,0 +1,197 @@
+--- 
+title: Nieinwazyjny javascript razem z Ruby on Rails
+typo_id: 34
+layout: post
+categories: ['pl']
+---
+Jakiś czas temu Riddle napisał o tym dlaczego "nie można zakładać, że ktoś ma włączony javascript":http://perfectionorvanity.com/2007/11/07/kto-normalny-wylacza-javascript/. Temat był już wcześniej wiele razy poruszany, mi bardzo podobał się artykuł Chrisa Heilmanna "The seven rules of Unobtrusive JavaScript":http://icant.co.uk/articles/seven-rules-of-unobtrusive-javascript/. Zachęcam do zapoznania się z tymi dwoma tekstami - pomogą zrozumieć dlaczego "tracić" czas na rozwiązywanie problemów, o których napiszę poniżej. Streszczając krótko artykuły mogę napisać, że jeżeli to możliwe, należy pisać aplikację tak, żeby działała bez włączonego javascriptu. Skrypty mogą nie działać z kilku powodów:
+  
+* użytkownik ma wyłączony javascript w przeglądarce
+* wystąpi błąd w kodzie (nie możemy sprawdzić kodu na wszystkich urządzeniach)
+* strona nie załaduje się do końca
+* boty wyszukiwarek nie używają javascriptu, więc w skrajnym wypadku możemy uniemożliwić zindeksowanie naszej strony
+
+Jak to wygląda w Railsach?
+
+Railsy są wyposażone w zestaw helperów generujących różnego rodzaju kawałki kodu javascript. Pomysł jest z pozoru bardzo fajny. Początkujący mogą szybko zacząć używać javascriptu razem z dobrodziejstwami, które daje nam Ajax bez znajomości samego języka. Jest jednak sporo minusów używania helperów:
+  
+* generują one dodatkowy niepotrzebny kod javascript. jeżeli na stronie mamy kilkadziesiąt linków, a każdy z nich ma wklejony kod `onclick="new Ajax.Request('/controller/action?n=33', {asynchronous:true, evalScripts:true, onComplete:function(request){undoRequestCompleted(request)}}); return false;"` strona będzie ważyć dużo więcej.
+* javascript w nich użyty jest "inwazyjny". Jeżeli javascript nie będzie działał, to element wygenerowany w taki sposób również nie zadziała^1^
+* ciężko jest się przy nich trzymać zasady DRY. Mając 5 linków wygenerowanych metodą link_to_remote z takimi samymi opcjami, za każdym razem gdy coś musimy zmienić, zmieniamy to w 5 miejscach. Powinno się oczywiście napisać helpera, który wygeneruje link z danymi opcjami. Tylko chyba nie tędy droga - w dalszej części artykułu postaram się pokazać dlaczego nieinwazyjny javascript jest lepszy w tego typu zadaniach.
+* z mojego doświadczenia wynika, że bardzo często, gdy ilość kodu się powiększa i javascript generowany przez railsy miesza się z tym z plików js można łatwo się pogubić. Tyczy się to także różnego rodzaju api - na przykład google maps. Najłatwiej działać, gdy javascript jest odseparowany od kodu railsów
+* jesteśmy związani z jedną biblioteką (w tym wypadku prototype+script.aculo.us) - jeżeli chcemy zamienić ją na coś innego (ja ostatnio przesiadłem się na jQuery, zastanawiałem się też nad YUI) helpery przestaną działać - można je oczywiście przepisać, ale komu by się chciało. DHH nie zamierza nic w tej kwestii zmieniać, więc na zmianę tego w Railsach nie ma co czekać.
+   
+Jakie są minusy? Trzeba lepiej poznać javascript (właściwie dla mnie to nie jest minus, ale dla niektórych być może tak). Nie jest to jednak przeszkoda nie do pokonania dla początkujących. Javascript, który jest potrzebny do zadań możliwych do wykonania z użyciem samych helperów nie jest z reguły przesadnie trudny do nauczenia. Ratunkiem dla osób, które nadal chcą korzystać z helperów jest "plugin UJS":http://www.ujs4rails.com/resources/quickstart-guide. Jeżeli bardzo nie chcesz pisać wszystkiego w czystym javascripcie, to jest to bardzo fajne połączenie prostoty helperów i zalet nieinwazyjnego javascriptu. Jest ona jednak pisana dla Prototype'a, więc tak jak w ostatnim punkcie z powyższej listy można o niej zapomnieć, jeżeli używana jest jakakolwiek inna biblioteka.
+
++W komentarzach apohllo zauważył, że plugin UJS nie jest już rozwijany. Używacie na własną odpowiedzialność. :)+
+
+Przejdę do przykładów, bo przecież nie samą teorią człowiek żyje. 
+
+Przerzuciłem się ostatnio na jQuery i chyba przy niej zostanę. Rozumiem jednak, że większość użytkowników railsów jest związana z Prototype'em, więc kod będę podawał w dwóch wersjach, dla Prototype'a i jQuery. 
+ 
+Na początek wprowadzenie. Co zrobić, żeby wyrzucić z htmla (i railsów) wstawki Javascript? Wszystko wstawiamy do aplikacji używając zdarzeń. Przypuśćmy, że mamy linka o id="someLink". Zamiast dopisania onclick:
+
+{% highlight javascript %}
+  <a href="#" onclick="alert('Klik!'); return false;">Link</a>
+{% endhighlight %}
+
+należy użyć:
+
+Prototype:
+
+{% highlight javascript %}
+  Event.observe($('someLink'), 'click', function(event) {
+    alert('Klik!');
+    Event.stop(event);
+  }
+{% endhighlight %}
+
+jQuery:
+
+{% highlight javascript %}
+  $('#someLink').click(function (){
+    alert('Klik!');
+    return false;
+  });
+{% endhighlight %}
+
+Oba przykłady dodają zdarzenie uaktywniane kliknięciem w linka. Ostatnia linijka w obu funkcjach, które są wykonywane po kliknięciu (nazywane są z reguły handlerami) jest wstawiona po to, żeby kliknięcie linka nie przeładowało strony.
+
+Kod taki w aplikacji Rails można wrzucić do pliku application.js, lub jakiegoś specyficznego pliku js ładowanego na danej stronie. Należy też go załadować dopiero po wczytaniu się całego dokumentu. Normalnie coś takiego uzyskiwało się wpisując w body: `onload="jakasFunkcjaJavascript();"`, ale takie dodawanie jest passe, więc:
+
+Prototype:
+
+{% highlight javascript %}
+  Event.observe(window, 'load', function() {
+    //kod który wykona się po załadowaniu strony
+  }
+
+  // lub zdefiniowana wcześniej funkcja, która wykona się po załadowaniu strony
+  Event.observe(window, 'load', jakasFunkcjaJavascript());
+{% endhighlight %}
+
+jQuery:
+
+{% highlight javascript %}
+  $(function() {
+    //kod który wykona się po załadowaniu strony
+  });
+  
+  // lub zdefiniowana wcześniej funkcja, która wykona się po załadowaniu strony
+  $(jakasFunkcjaJavascript);
+  //powyższe przykłady, to skrócone wersje document.ready:
+  $(document).ready(function () {});
+{% endhighlight %}
+
+Dzięki tym konstrukcjom mamy pewność, że kod wykona się dopiero gdy załaduje się cały dokument, a nie w momencie, gdy dołączony jest plik js.
+
+Teraz przykład prostego zapytania ajax (przykład z dokumentacji railsów):
+
+{% highlight ruby %}
+  link_to_remote 'hello', :url => { :action => "action" }, 
+    404 => "alert('Not found...? Wrong URL...?')",
+    :failure => "alert('HTTP Error ' + request.status + '!')"
+  # Wygeneruje: <a href="#" onclick="new Ajax.Request('/testing/action', {asynchronous:true, evalScripts:true,
+  #            on404:function(request){alert('Not found...? Wrong URL...?')},
+  #            onFailure:function(request){alert('HTTP Error ' + request.status + '!')}}); return false;">hello</a>
+{% endhighlight %}
+  
+Jak widać powyżej wygenerowanego kodu jest całkiem sporo. Jeżeli będzie trzeba wstawić taki link w paru miejscach dobrze by było napisać swojego własnego helpera, który automatycznie będzie wklejał komunikaty o błędach.
+  
+  Jak można to zrobić lepiej? Na początek wystarczy stworzyć zwykłego linka z jakąś klasą, lub id:
+
+{% highlight ruby %}
+  link_to 'hello', { :action => 'action' }, :class => 'ajax'
+{% endhighlight %}
+  
+Teraz trzeba użyć trochę javascriptu :
+
+{% highlight javascript %}
+        $$('a.ajax').each(function (element) {
+          Event.observe(element, 'click', function(event) {
+            new Ajax.Request(this.readAttribute('href'), {asynchronous:true, evalScripts:true, 
+              on404:function(request){alert('Not found...? Wrong URL...?')}, 
+              onFailure:function(request){alert('HTTP Error ' + request.status + '!')}}); 
+            Event.stop(event);
+          });
+        });
+{% endhighlight %}
+  
+Na początku pobieramy wszystkie linki z klasą ajax i dla każdego z nich wywołujemy funkcję `Event.observe(element, 'click'....`. Dalszy kod wykona się więc po kliknięciu w danego linka. W tym wypadku wykonujemy zapytanie ajaxowe (`new Ajax.Request`). Pierwszy argument to atrybut href linka (uwaga, kod ten nie zadziała w starszych wersjach prototype'a, które niepoprawnie obsługiwały this w tego typu funkcji). Reszta kodu to standardowe opcje, po więcej odsyłam do dokumentacji Prototype.
+  
+A w jQuery wyglądać to będzie tak:
+
+{% highlight javascript %}
+    $('a.ajax').click(function (){
+      $.ajax({
+        url: this.href,
+        dataType: "script",
+        beforeSend: function(xhr) {xhr.setRequestHeader("Accept", "text/javascript");},
+        error: function(){
+          alert( "Error loading page");
+        }
+      });     
+      return false;
+    });
+{% endhighlight %}
+
+Kod zasadniczo robi to samo, co poprzedni przykład. Można przy okazji porównać prostotę jQuery i porównać ją z Prototype'em (ostatnio dużo się w tej bibliotece pozmieniało, a ja nie jestem na bieżąco, więc jeżeli ktoś zna lepszy sposób na napisanie czegoś takiego, to proszę o komentarz). Skomentuję tylko atrybuty dataType i beforeSend w funkcji ajax(). Ustawiając je w taki sposób przekazujemy serwerowi, że chcemy dostać odpowiedź jako skrypt i akceptujemy typ MIME "text/javascript". Należy te 2 rzeczy dodać, ponieważ inaczej nie będzie renderować się plik RJS. Więcej na ten temat w artykule "jQuery Ajax + Rails":http://mad.ly/2007/05/17/jquery-ajax-rails/
+  
+Rozwiązanie proste i efektywne. Żeby link wykonał javascript wystarczy dodać do niego klasę ajax. Jeżeli strona i kody javascript nie wczytają się, link dalej będzie działał poprawnie. Przy założeniu, że poprawnie obsłużymy wszystko w kontrolerze. Służy do tego metoda `respond_to`
+  
+{% highlight ruby %}
+  respond_to do |format|
+    format.js # jeżeli to zapytanie wykonane ajaxem uruchomi się plik RJS
+    format.html # w przeciwnym wypadku wyrenderowany zostanie template rhtml
+  end
+{% endhighlight %}
+
+Więcej o takim sposobie renderowania templatów pisał na przykład "Jamis Buck":http://weblog.jamisbuck.org/2006/3/27/web-services-rails-style.
+
+Można też w podobny sposób zamienić zwykłą formę na taką wysyłaną ajaxem:
+
+Prototype:
+
+{% highlight javascript %}
+     $$('form.ajax').each(function (element) {
+        Event.observe(element, 'submit', function(event) {
+          new Ajax.Request(this.readAttribute('action'), {
+            parameters: Form.serialize(this),
+            asynchronous:true, 
+            evalScripts:true
+            }); 
+          Event.stop(event);
+        });
+      });  
+{% endhighlight %}
+
+Powyższy kod jest bardzo podobny do poprzedniego przykładu. Różnica polega na tym, że zdarzeniem nie jest 'click' tylko 'submit' i jako parametry podajmy wynik funkcji `Form.serialize(this)` - zbiera ona wartości pól i zwraca string typu: "pole1=wartosc1&pole2=wartosc2"
+
+jQuery:
+
+{% highlight javascript %}
+  $("form.ajax").ajaxForm({
+    dataType: 'script',
+    beforeSend: function(xhr) {xhr.setRequestHeader("Accept", "text/javascript");},
+    resetForm: true
+  });
+{% endhighlight %}
+ 
+W jQuery najłatwiej skorzystać z pluginu "jQuery Form":http://www.malsup.com/jquery/form/ - załatwia on za nas wszelkie formalności ;-) 
+   
+W ten sposób zmiana jakiegoś linka lub formy na jego ajaxową formę to kwestia dodania jednej klasy. Można oczywiście napisac wiele takich funkcji dla różnych przypadków, dowiązanych do tagów z innymi klasami, lub z konkretnym id.
+
+Na koniec krótkie podsumowanie. 
+
+Kod javascript dodajemy do aplikacji tak, żeby nie zablokować dostępu w wypadku braku jego wykonania. Zapomnieć można o wszelakich "onclick" i innych tego typu sprawach. Wszystko powinno być dołączone jako zdarzenia. Dzięki temu zmniejsza i upraszcza się kod railsów i ten przez nie generowany.
+
+Warto obejrzeć również plugin "MinusMOR":http://www.danwebb.net/2006/11/24/minusmor-released, który zmienia trochę podejście do javascriptu. Zamiast plików rjs, w których używamy rubiego zamienianego później na javascript, mamy pliki ejs, w których wpisujemy kod javascript z możliwością wstawiania kodu rubiego. Tak samo jak w rhtmlu poprzez &lt;% %&gt;.
+
+-W komentarzach apohllo zauważył, że plugin MinusMOR nie jest już rozwijany. Trzeba o tym pamiętać zaczynając go używać. Z drugiej strony widziałem kod pluginu i rejestruje on tylko nowe rozszerzenie "ejs". Na początku szukane będą pliki z tym rozszerzeniem, a jeżeli ich nie będzie Railsy wyrenderują RJS. W każdym razie zaczynacie używać na własną odpowiedzialność. :)-
+
+Zapraszam do komentowania - prosiłbym o opinie dotyczące tego typu artykułów. Czy są zrozumiałe? Czy przydają się wam? Konstruktywna krytyka mile widziana. :)
+ 
+ 
+<hr/>
+
+# W tym miejscu trzeba zaznaczyć, że jest możliwość wygenerowania linku, czy formy, która będzie działała przy wyłączonym javascripcie, ale niewiele osób o tym wie i z tego korzysta. I trzeba dopisać 2 url, który z reguły jest taki sam - łamana jest zasada DRY

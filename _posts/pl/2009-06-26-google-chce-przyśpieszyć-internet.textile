@@ -1,0 +1,13 @@
+--- 
+title: "Google chce przy\xC5\x9Bpieszy\xC4\x87 internet"
+typo_id: 61
+layout: post
+categories: ['pl']
+---
+Nie od dziś wiadomo, że prędkość ładowania strony ma wpływ na akcje użytkowników. Badania prowadzone miedzy innymi przez Yahoo, Google i Amazon wskazały, że zmniejszenie czasu ładowania strony ma bezpośredni wpływ na ilość akcji wykonanych przez użytkowników (wyszukiwań lub w wypadku Amazona zakupionych przedmiotów). 
+
+Google odpalił niedawno stronę, na której "zachęca i uczy jak przyśpieszyć działanie naszych stron i serwisów":http://code.google.com/speed/index.html
+
+Dodatkowo Google wypuścił narzędzie "Page Speed":http://code.google.com/speed/page-speed/, które jest rozszerzeniem do Firebuga i podobnie jak "YSlow":http://developer.yahoo.com/yslow/ pomaga zbadać stronę pod kątem prędkości ładowania się poszczególnych komponentów. Oba te narzędzia dostarczają od razu praktycznych porad i opisów pomagających zrozumieć jak zoptymalizować stronę. Dla mnie są to niezbędne narzędzia przy pracy z serwisami internetowymi. Do tej pory używałem głównie YSlow, ale przy następnych optymalizacjach na pewno skorzystam z Page Speed.
+
+Jeżeli jeszcze nie znacie tych narzędzi, gorąco polecam zapoznanie się z nimi.

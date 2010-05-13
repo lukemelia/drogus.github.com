@@ -1,0 +1,57 @@
+--- 
+title: Przyjazne adresy w Ruby on Rails
+typo_id: 40
+layout: post
+categories: ['pl']
+---
+W dzisiejszych czasach, kiedy "SEO":http://en.wikipedia.org/wiki/Search_engine_optimization dla niektórych jest ważniejsze od treści przyjazne adresy można zobaczyć na większości stron. Dlaczego nie wrzucić ich do naszej aplikacji? Nawet jeżeli komuś nie zależy na SEO, przyjazne adresy są... przyjazne! Użytkownik dostający linka http://foo.com/article/kolejny-artykul-o-naszej-klasie będzie miał szansę zastanowić się sekundę i nie kliknąć (nie to żebym miał coś do naszej klasy, ale boję się ostatnio lodówkę otworzyć, jeszcze szynka zacznie nawijać kogo dodała do znajomych). Same korzyści!
+
+Dodanie przyjaznych adresów jest w aplikacji railsowej bardzo proste jeżeli trzymamy się kilku zasad. Jak to działa? ActiveRecord::Base, po którym dziedziczą udostępnia metodę to_param, która jest wykorzystywana przy generowaniu adresów.
+
+W praktyce wygląda to tak, że jeżeli napiszemy:
+<code><pre>
+link_to @article.name, articles_path(@article)
+#albo
+link_to @article.name, :controller => "articles", :action => "show", :id => @article
+</pre></code>
+
+wywołana zostanie metoda to_param i @article zostanie zamieniony na jego id. Można to wykorzysta do naszych niecnych celów.
+
+Można nadpisać to_param
+<code><pre>
+  def to_param
+    "#{id}-#{name.gsub(/[^a-z0-9]+/i, '-')}"
+  end
+</pre></code>
+
+Od teraz zamiast id będzie generował się string zawierający name, na przykład: "11-tytuł-artykułu". Hamerykanie mają mniejszy problem, bo nie mają znaków diakrytycznych i mogą to tak zostawić. gsub zamieni wszystkie znaki nie wchodzące w skład alfabetu na myślnik. U nas jest gorzej, bo nie chcemy mieć adresu: "11-tytu-artyku-u". I weź teraz zgaduj gdzie dorzucić ogonki. Z pomocą przychodzi Obie Fernandez, który napisał najfajniejszą jaką do tej pory widziałem metodą "zamieniającą znaki diakrytyczne na odpowiadające im litery alfabetu":http://www.jroller.com/obie/entry/fix_that_tranny_add_to
+Wrzuciłem na serwer "wersję z polskimi znakami diakrytycznymi":http://drogomir.com/ruby/ascii.rb. Taki plik wystarczy wrzucić do folderu initializers dla Railsów 2.0.x, albo do katalogu lib dla 1.2.x (w tym wypadku trzeba też w environment.rb dodać linijkę require 'ascii'). Zrobiłem jeszcze jedną modyfikację - to_url_format powinien moim zdaniem w miejsce spacji i innych znaków wrzucać myślniki. Lepiej wygląda "tytul-artykulu" niż "tytulartykulu".
+
+Dzięki temu String udostępnia 2 nowe metody: `to_url_format` i `to_ascii`:
+<code><pre>
+"zażółć gęślą jaźń".to_ascii #=> "zazolc gesla jazn"
+
+"zażółć gęślą jaźń".to_url_format #=> "zazolc-gesla-jazn"
+</pre></code>
+
+Teraz wystarczy zmodyfikować lekko to_param:
+<code><pre>
+  def to_param
+    "#{id}-#{name.to_url_format}"
+  end
+</pre></code>
+
+Dzięki temu urle będą miały upragnioną formę: "12-tytul-artykulu".
+
+Tylko po co to id na początku? Dzięki temu obędzie się bez żadnych zmian w kontrolerach. Taki string zostanie przed wrzuceniem do bazy automatycznie skonwertowany na liczbę całkowitą. Czyli kolejna rzecz, która "po prostu działa" automagicznie. Jeżeli id będzie potrzebne w jakimś innym miejscu, w którym nie nastąpi konwersja można to zrobić ręcznie: params[:id].to_i, bo:
+<code><pre>
+"11-jakis-napis".to_i #=> 11
+</pre></code>
+
+Jaki jest minus takiej metody? Adresy mają w sobie id i tylko na podstawie tego id jest pobierany artykuł, więc czy wpiszemy /articles/11-tytul-artykulu, czy /articles/11-tralalala pobierze się ten sam artykuł.
+
+Żeby temu zapobiec najlepiej zrobić dodatkową kolumnę, na przykład "permalink" i wpisywać do niej przekształcony adres. Np. article.permalink = article.name.to_url_format . I zamiast po id szukać po kolumnie permalink: Article.find_by_permalink(params[:id]). Oczywiście z metody to_param też trzeba usunąć id :)
+
+Nie każdemu to drugie podejście będzie potrzebne. Dla mnie wersja z id jest o tyle lepsza, że jak nawet ktoś nie skopiuje całego adresu, albo pomyli się przy wpisywaniu (tak, czasami zdarza się, że ktoś dyktuje jakiś adres), to jest duża szansa, że dotrze na dobrą stronę. Poza tym istnieje wtedy możliwość wklejenia adresu bez dalszej części, która może być dość długa - może nie trzeba będzie korzystać z serwisów typu tinyurl. 
+
++Wrzuciłem "nową wersję skryptu":http://drogomir.com/ruby/ascii.rb działającą z nowszymi wersjami Ruby on Rails+

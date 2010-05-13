@@ -1,0 +1,27 @@
+--- 
+title: YUI 3 beta
+typo_id: 60
+layout: post
+categories: ['pl']
+---
+We wczorajszym poście na blogu YUI "ogłoszono wersję beta YUI3":http://www.yuiblog.com/blog/2009/06/24/yui3b1/. 
+
+*YUI* (Yahoo User Interface) jest frameworkiem javascript rozwijanym przez YAHOO, który dostarcza nie tylko niskopoziomowe funkcje pomagające przy pisaniu kodu javascript, ale też zestaw komponentów (takich jak różnego rodzaju okienka dialog, color picker, czy nawet "bardzo dobry edytor WYSIWYG":http://developer.yahoo.com/yui/editor/). YUI jest dojrzałą biblioteką używaną na stronach YAHOO, co zapewnia bardzo dobrą jakość. Sam team YUI to jedni z najlepszych specjalistów od frontendu - zachęcam do czytania wpisów na "ich blogu":http://developer.yahoo.com/yui/editor/
+
+To co najbardziej przekonywało mnie do używania YUI, to fakt dostarczenia całego zestawu narzędzi do budowania interfejsów użytkownika w javascripcie. W przypadku np. jQuery lekko może denerwować bardzo duże rozstrzelenie poszczególnych bibliotek. Są oczywiście takie projekty jak "jqueryUI":http://jqueryui.com/, ale większość pluginów trzeba ściągnąć z innych źródeł, a ich kod często pozostawia wiele do życzenia. W przypadku YUI mamy zwarty zestaw komponentów, łatwy do rozszerzania i rozwijany przez specjalistów w celu wykorzystania na stronach odwiedzanych codziennie przez miliony internautów.
+
+Z drugiej strony to co było banalne w jQuery często było ciężkie do uzyskania w YUI. A jak wszyscy wiedzą jeżeli chodzi o zabawę z DOM, animacjami i ajaxem z jQuery jest ciężko wygrać. Dlatego gdy używałem komponentów YUI w jednym z projektów, w którym przy okazji używałem jQuery, to do manipulacji elementów DOM używałem jQuery, a z YUI wybierałem tylko komponenty.
+
+Wersja trzecia YUI może to zmienić. Zespół z Yahoo postanowił przepisać bibliotekę zupełnie od nowa z naciskiem na lekkość i szybkość. Najważniejsze zmiany 
+
+* zmienione API do manipulacji DOM, czyli "jQueryzacja" - łańcuchy komend, proste funkcje typu addClass, remove, append itp.
+* ułatwiona praca z eventami
+* modularyzacja biblioteki
+
+Najbardziej obiecująco wygląda ostatni punkt. Do tej pory poszczególne komponenty nie były modularne, co prowadziło do powtarzającego się  kodu w różnych komponentach. Dodatkowo jeżeli ktoś chciał stworzyć Tooltip dziedziczący po Overlay, to musiał wykorzystać wszystkie elementy, które Overlay zawiera. Jest to oczywiście zbędne wykorzystywanie pamięci i "Tooltip, który jest obecnie dostępny w YUI":http://developer.yahoo.com/yui/container/tooltip/index.html właśnie z tego powodu nie jest najlepszą możliwą implementacją.
+
+W YUI3 poszczególne funkcjonalności są rozbite do modułów. Dlatego, żeby zbudować wspomniany wyżej tooltip nie trzeba dziedziczyć po Overlay, tylko zmiksować (czy to nie brzmi znajomo?) na przykład: moduł pozycjonowania i moduł animacji. Dodatkowo można wmiksować poszczególne moduły nie tylko do klas, ale także instancji poszczególnych obiektów. Jeżeli będzie to rzeczywiście działało tak fajnie jak mówią programiści z YUI (polecam obejrzeć video ze "zlinkowanego wcześniej posta":http://www.yuiblog.com/blog/2009/06/24/yui3b1/), to YUI3 na pewno zagości w moich projektach. 
+
+To co najbardziej denerwuje mnie obecnie w różnego rodzaju bibliotekach do jQuery czy prototype, to całkowite oderwanie poszczególnych bibliotek od siebie. Używam na przykład jqueryUI i żeby użyć tooltipa, muszę ściągnąć zupełnie inną bibliotekę, która jest napisana zupełnie inaczej i nie dzieli żadnego kodu z innymi bibliotekami (tutaj też wychodzi swoboda javascriptu, jeżeli ktoś próbował porównywać implementacje różnych bibliotek, to na pewno wie na ile różnych sposobów można zaimplementować te same funkcje). Jeszcze gorzej jest gdy trzeba napisać własne komponenty - lekkość jQuery i brak oficjalnych bibliotek pomagających w takich wypadkach jest dość dużą przeszkodą.
+
+W tym momencie YUI team zachęca programistów do używania YUI3 w nowych projektach, szczególnie tych, które nie planują wykorzystywać dużej ilości widgetów obecnych w YUI2. Oficjalna wersja ma być dostępna w 3 kwartale tego roku. Rozwój można biblioteki śledzić "tutaj":http://yuilibrary.com/projects/yui3/roadmap

@@ -1,0 +1,117 @@
+--- 
+title: jQuery vs Prototype
+typo_id: 30
+layout: post
+categories: ['pl']
+---
+Kilka dni temu wrzuciłem "notkę promującą jQuery":http://blog.drogomir.com/articles/2007/08/31/dlaczego-jquery. Często podczas porównywania narzędzi przeżywam pewien rodzaj euforii, która nie pozwala mi na obiektywne rozpatrzenie wszystkich za i przeciw. Przez chwilę wydaje mi się, że znalazłem narzędzie idealne (co oczywiście jest okropnym nadużyciem. jak ogólnie wiadomo idealny jest tylko polski rząd i jego sukcesy na przestrzeni ostatnich 2 lat - widziałem w reklamach).
+
+W każdym razie ochłonąłem trochę i ze spokojem buddyjskiego mnicha (mówiłem już, że jestem oazą spokoju?) przetrząsnąłem cały internet w poszukiwaniu informacji. Próbowałem nawet wywołać flamewara na google groups. I biednie jest. Niewiele znalazłem. Wszędzie jakieś artykuły, których sens jest mniej więcej taki: "Przez długi czas używałem prototype(jQuery) i stwierdziłem, że muszę dać jQuery(prototype) szansę. jQuery jest prototype killerem!". Nie licząc fajnego artykułu "na agile ajax":http://blogs.pathf.com/agileajax/2007/08/jquery-vs-proto.html. Stety albo niestety autor nie do końca chce wyjawić, które podejście jest dla niego lepsze. Aczkolwiek pewną wskazówką może być przesiadka na jQuery, a nie odwrotnie.
+
+No i "krytyka modelu dziedziczenia zastosowanego w prototype":http://alternateidea.com/blog/articles/2006/05/23/prototype-inheritance-madness.
+
+Pozwoliłem sobie zrobić własne porównanie. Mam nadzieję, że chociaż w małym procencie obiektywne. ;-)
+
+
+h3. Manipulacja DOM i CSS
+
+Na tym polu zdecydowanie wygrywa jQuery. Twórca zapewnił coś, co nazywa się "chainability". Metody manipulujące elementami HTMLa można wywoływać w łańcuchach, na przykład @jQuery('#some').show('slow').css('background-color', 'white').add('<p>Dodatkowy paragraf!</p>')@.
+
+Jeżeli chodzi o same selektory, to od wersji 1.5.0 prototype ma obsługę selektorów CSS, więc nie ma już problemu z wybieraniem elementów w bardzo fikuśnych konfiguracjach ;-)
+
+jQuery ma jeszcze jedną ciekawą właściwość. Wybrane elementy zawsze zwracane są w tablicy dzięki czemu biblioteka sama zadba o przeiterowanie po kolekcji i zaaplikowaniu metody do każdego jej elementu. Na przykład zamiast napisać (prototype):
+
+{% highlight javascript %}
+$$('a').each(function(v, i) { Event.observe(v, 'click', fn); });
+{% endhighlight %}
+
+Możemy użyć:
+
+{% highlight javascript %}
+jQuery('a').click(fn);
+{% endhighlight %}
+
+h3. Wydajność
+
+Na tym polu prototype mocno dawał w kość jQuery, ale sytuacja się poprawiła. W poprzednim poście zamieściłem 2 screeny, na których można zauważyć, że obecnie jQuery jest jakieś 2 razy wolniejsza (oczywiście jeżeli chodzi o same selektory). Dla innych metod podejrzewam, że będzie podobnie (dla each i map na pewno - jeżeli ktoś się bardzo nudzi może się pobawić i zrobić więcej benchmarków).
+
+Ale statystyki na szczęście nie zawsze oddają to, co dzieje się w rzeczywistości. Jeżeli ktoś dysponuje odpowiednio wolnym komputerem (kilkaset mhz najlepiej), łatwo może sprawdzić, że efekty napisane w "script.aculo.us":http://script.aculos.us bardziej "mulą" kompa niż ich odpowiedniki w jQuery (linux, firefox2 - wydaje mi się, że na innych systemach i przeglądarkach będzie podobnie). Szczególnie widać tą różnicę przy wszelakich tworach drag&drop.
+
+h3. Rozszerzenia
+
+W tym miejscu wystarczy spojrzeć na "listę rozszerzeń dla jQuery":http://docs.jquery.com/Plugins. Tego chyba nic w tej chwili  nie pobije. Rozszerzenia z zakresu UI dla prototypa (a właściwie script.aculo.us) wyglądają biednie w takim porównaniu.
+
+Duży plus dla jQuery.
+
+h3. Społeczność
+
+jQuery jest niewątpliwie biblioteką popularniejszą. Niektórzy mówią, że to chwilowy buzz (znowu ulegam modzie frameworkowej? :). 
+
+Prototype z kolei, chociaż mniej popularny, ma mocne wsparcie w społeczności RoR i wsparcie Rails Core Team. Podobno niektórzy pracują nad czymś co można nazwać "jQuery on Rails", ale nadal prototype jako jedyny jest dostępny "out of the box". 
+
+h3. Rozszerzenia języka.
+
+Prototype dodaje do javascriptu bardzo dużo metod, wzorowanych na metodach rubiego,  ułatwiających pracę z wbudowanymi typami. Między innymi moduł Enumerable, Hash, sporo metod do String, Date i dużo dużo więcej.
+
+jQuery z kolei udostępnia tylko kilka metod (each, map, trim, grep...). Oczywiście można dodać swoje metody, ale w tym miejscu trzeba wspomnieć o filozofii jQuery.
+
+Prototype dodaje nowe metody do poszczególnych klas, dzięki czemu można napisać na przykład:
+
+{% highlight javascript %}
+['a', 'b', 'c'].each(function(v, i) { alert(v); });
+{% endhighlight %}
+
+W jQuery wyglądałoby to w ten sposób:
+
+{% highlight javascript %}
+jQuery.each(['a', 'b', 'c'], function(v, i) { alert(v); });
+{% endhighlight %}
+
+Jeszcze nie jestem do końca pewien, które podejście mi bardziej pasuje. Być może połączenie jQuery z podejściem prototype?
+
+{% highlight javascript %}
+jQuery.extend(Array.prototype, {
+  each: function(iterator) {
+    jQuery.each(this, iterator);
+  }
+});
+{% endhighlight %}
+
+I już można użyć konstrukcji analogicznej do prototype. Po paru zmianach można dodać też resztę funkcji z Enumerable - po odpowiednim przygotowaniu potrzeba niewiele więcej niż copy&paste. Podobnie łatwo będzie z resztą rozszerzeń.
+
+Można również zostać przy podejściu jQuery i napisać metody działające mniej więcej tak:
+
+{% highlight javascript %}
+jQuery.collect(arr, function(v, i) { /* jakiś kod */});
+{% endhighlight %}
+
++Chwilę po dodaniu tego posta przypadkiem trafiłem na fajny artykuł, który pokazuje dlaczego "podejście a'la prototype jest po ciemnej stronie mocy":http://mg.to/2006/05/20/prototype-vs-web-2-0 ;-)+
+
+W następnym poście opiszę jak można to szybko, łatwo i przyjemnie zrobić. (o ile starczy mi czasu i samozaparcia)
+
+Od wersji 1.6.0 prototype dostanie też parę bardzo przydatnych funkcji i narzędzi. Między innymi DOMBuilder, custom events, wrap() - bardzo podobają mi się takie smaczki. Więcej informacji w "notce na stronie prototype":http://www.prototypejs.org/2007/8/15/prototype-1-6-0-release-candidate
+
+Podsumowując ten punkt, jeżeli chcemy intensywnie korzystać z wymienionych powyżej metod (polecam przejrzeć "dokumentację prototype":http://www.prototypejs.org/api/) lepszym wyborem będzie prototype. Z zaznaczeniem, że sporo z tych funkcji można bardzo łatwo przenieść do jQuery ;-)
+
+h3. Materiały
+
+Przez pewien czas, dawno dawno temu, prototype nie miał prawie dokumentacji, co mogło niektórych zniechęcać. Aktualnie można powiedzieć, że zarówno prototype, jak i script.aculo.us są dobrze udokumentowane i raczej nikt nie będzie miał problemu z nauką. Tak samo zresztą jest z jQuery.
+
+Oba framweorki doczakały się książek. 
+
+* jQuery: 
+** "Learning jQuery":http://www.amazon.com/Learning-jQuery-Interaction-Development-JavaScript/dp/1847192505/ref=pd_bbs_sr_1/102-4639170-4767356?ie=UTF8&s=books&qid=1188905165&sr=8-1
+** "jQuery Reference Guide":http://www.amazon.com/jQuery-Reference-Guide-Karl-Swedberg/dp/1847193811/ref=pd_bbs_sr_2/102-4639170-4767356?ie=UTF8&s=books&qid=1188905165&sr=8-2
+* prototype:
+** "Prototype and Scriptaculous in Action":http://www.amazon.com/Prototype-Scriptaculous-Action-Dave-Crane/dp/1933988037/ref=pd_bbs_sr_1/102-4639170-4767356?ie=UTF8&s=books&qid=1188905195&sr=8-1
+** "Prototype and script.aculo.us: You Never Knew JavaScript Could Do This!":http://www.amazon.com/Prototype-script-aculo-us-Never-JavaScript-Could/dp/1934356018/ref=pd_bbs_2/102-4639170-4767356?ie=UTF8&s=books&qid=1188905195&sr=8-2
+
+h3. Podsumowanie
+
+Ciężko mi wybrać ten lepsiejszy framework. I na pewno wybór ten nie będzie obiektywny - każdy musi sam rozważyć czego oczekuje po bibliotece.
+
+Wydaje mi się, że przy projekcie, który w tym momencie zaczynam bardziej sprawdzi się jQuery. Mam w głowie ułożony zaawansowany interfejs użytkownika i nie chciałbym żadnych zgrzytów, a jak pokazuje przykład scriptaculous, płynność różnych efektów nie ma wiele wspólnego z szybkością biblioteki.
+
+Z drugiej strony jeżeli ktoś uważa, że będzie wykonywał po stronie użytkownika sporo obliczeń, pętli, działania na dużych tablicach itp. itd. prawdopodobnie dobrym wyborem będzie prototype - nie dość, że jest łatwiej wykonywać te czynności, to jeszcze wszystko działa szybciej.
+
+Mam nadzieję, że powyższy opis pomoże w wybraniu biblioteki lepszej do rozwiązania danego problemu. Jeżeli pominąłem jakieś soczyste właściwości którejś z bibliotek proszę o komentarz - uzupełnię porównanie :)
