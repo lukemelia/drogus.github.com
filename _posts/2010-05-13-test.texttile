@@ -1,0 +1,10 @@
+---
+layout: post
+title: Test
+---
+
+h1. {{ page.title }}
+
+p(meta). 18 Oct 2008 - Wrocław
+
+Just a test blog post.
