@@ -1,0 +1,170 @@
+--- 
+title: Cucumber and Celerity - testing unobtrusive javascript
+layout: post
+categories: ['en']
+deprecated: "This post is quite old now and there is better approach to testing javascript with rails. Currently I use \"Capybara\":http://github.com/jnicklas/capybara which is nice Webrat style API which supports several testing tools: rack/test, culerity, celerity and webdriver (aka selenium 2.0)."
+---
+In the world of javascript and ajax web apps I often find that writing applications supporting both javascript enabled and disabled is hard. For the sake of simplicity and due to deadlines I often write only javascript version of some of the features. But there are many situations where both scenarios should be supported.
+
+The most important parts of app, especially the ones that must be crawled by google, should be written with unobtrusive style. And here comes the problem... I rarely see javascript testing and till today I haven't done it myself. Celerity and cucumber (with help of culerity) can solve this problem. Here is short guide introducing this technique.
+
+I will use "Cucumber":http://cukes.info/, "celerity":http://celerity.rubyforge.org/ (which is "HtmlUnit":http://htmlunit.sourceforge.net/ wrapper with API compatible with watir) and "culerity":http://github.com/langalex/culerity/tree/master. Culerity is a proxy between celerity and your app. Celerity requires JRuby and probably your app need MRI or REE - culerity resolves this problem.
+
+Let's get started.
+
+You need to "install JRuby":http://kenai.com/projects/jruby/pages/GettingStarted#Installing_a_JRuby_Binary_Fille in order to run celerity. After installing and adding jruby to your PATH install celerity gem (probably as a root):
+
+{% highlight ruby %}
+jruby -S gem install celerity
+{% endhighlight %}
+
+Now you can create rails app and configure the environment:
+
+{% highlight ruby %}
+rails culerity-example
+sudo gem install cucumber rspec rspec-rails haml
+# add config.gem "haml" to environment.rb
+gem install langalex-culerity --source http://gems.github.com
+cd culerity-example
+./script/generate cucumber
+./script/generate rspec
+# now edit database.yml and set database options
+rake db:migrate
+rake features
+rm features/step_definitions/webrat_steps.rb # cause we will be using celerity
+{% endhighlight %}
+
+At this point you should have cucumber configured and you should be able to run "rake features" with output similar to:
+
+{% highlight ruby %}
+0 scenarios
+0 steps
+0m0.000s
+{% endhighlight %}
+
+Let's add some tests! You will need step definitions and hooks. Culerity provides some basic step definitions and hooks which you can generate with "./script/generate culerity" but I've changed them a bit for my needs, so you can find them on "this example repository":http://github.com/drogus/culerity-javascript-example.
+* "features/step_definitions/common_celerity.rb":http://github.com/drogus/culerity-javascript-example/blob/master/features/step_definitions/common_celerity.rb
+* "features/support/hooks.rb":http://github.com/drogus/culerity-javascript-example/blob/master/features/support/hooks.rb
+
+Copy those files to your app.
+
+The first file is just rewrite of webrat steps and the second file adds hooks for firing celerity server and browser. Let me explain the hooks.rb file:
+
+{% highlight ruby %}
+require 'culerity'
+`mongrel_rails start -e cucumber -p 3001 -d`
+
+Before do
+  $server ||= Culerity::run_server
+  $browser = Culerity::RemoteBrowserProxy.new $server, {:browser => :firefox}
+  $browser.webclient.setJavaScriptEnabled(false) 
+  @host = 'http://localhost:3001'
+end
+
+Before("@js") do |scenario|
+  $browser.webclient.setJavaScriptEnabled(true)
+end
+
+at_exit do
+  $browser.exit
+  $server.close
+  `mongrel_rails stop`
+end
+{% endhighlight %}
+
+'Before' hooks are run before each scenerio. In first 'before' hook server and browser are set up and host is set to "http://localhost:3001" (change it if you want to run app on other address or port). Notice the line: $browser.webclient.setJavaScriptEnabled(false) - it disables javascript by default.
+
+Second Before hook is fired only for scenarios tagged with @js tag. It will be useful for explicitly saying which scenarios should be tested with  javascript.
+
++I've also added lines to start mongrel before the tests and stop it at exit. It's handy if you don't want to run and restart mongrel manually+
+
+Now it is time to write some scenarios. File "features/javascript.feature":http://github.com/drogus/culerity-javascript-example/blob/master/features/javascript.feature
+
+{% highlight ruby %}
+Feature: Javascript
+  In order to test javascript
+  As a developer
+  I need a way to run test scenarios with javascript enabled or disabled
+
+  @js
+  Scenario: With javascript
+    Given I am on the homepage
+    And I follow "Click me!"
+    Then I should see "Javascript rocks!"
+
+  Scenario: Without javascript
+    Given I am on the homepage
+    And I follow "Click me!"
+    Then I should see "I am also working without javascript!"
+{% endhighlight %}
+
+Both scenerios rely on "Click me!" link but have different expectations. -To run those tests start mongrel (or any other web server):-
+<del>
+
+{% highlight ruby %}
+mongrel_rails start -e cucumber -p 3001 -d
+{% endhighlight %}
+
+</del>
+-This will fire mongrel in background on port 3001.-
++It is not necessary as mongrel control commands are in hooks.rb file+
+
+It's best to operate on 2 console tabs while using celerity. One of the big drawbacks of using it, is lack of displaying rails exceptions. Because of that I run cucumber on one tab and "tail -f log/cucumber.log" on the other - I can see errors in the log without opening the browser.
+
+Let's run tests: <pre>rake features</pre>
+
+Of course both tests should fail with <pre>Unable to locate Link, using :text and /Click me!/</pre> and rails error in log file: <pre>ActionController::RoutingError (No route matches "/" with {:method=>:get}):</pre>
+
+Now we can fix it. We need some controller to show the link: 
+<pre>script/generate rspec_controller home</pre>
+
+Add <pre>map.root :action => "show", :controller => "home"</pre> to routes file.
+Next copy "app/views/layouts/main.html.haml":http://github.com/drogus/culerity-javascript-example/raw/master/app/views/layouts/main.html.haml (it just yields action and includes jquery.js and application.js) and "jquery.js":http://github.com/drogus/culerity-javascript-example/raw/master/public/javascripts/jquery.js
+
+You need to also set layout for home controller: <pre>layout 'main'</pre>
+
+And here comes html and javascript.
+app/views/home/show.html.haml
+
+{% highlight ruby %}
+= link_to "Click me!", "?clicked=1", :id => "click_me"
+
+#text
+  - if params[:clicked]
+    I am also working without javascript!
+{% endhighlight %}
+
+It displays a link and a text if params[:clicked] is present. So after clicking on that link page will be reloaded with parameter clicked=1 and the text will be displayed.
+
+Let's check if it's passing:
+<pre>mongrel_rails restart; rake features</pre>
+We need to restart mongrel before "rake features" in order to load changes because of "cache_classes = true". It's one of the drawbacks of using this method, but I'm sure that someone will find out better way to do that.
+
+If you did everything properly the second scenario should pass now. We're green! :D
+
+Add javascript code to your application in order to make the second scenario pass:
+
+{% highlight ruby %}
+jQuery(function() {
+  $("#click_me").click(function() {
+    $("#text").html("Javascript rocks!");
+    return false;
+  });
+})
+{% endhighlight %}
+
+Now both scenarios should pass. 
+
+To sum up, now you should be able to:
+* configure rails app with cucumber and celerity
+* specify how your tests should be run by placing @js tag on top of javascript scenarios
+* test unobtrusive javascript with ease
+
+TODOs:
+* -figure out better way to reload rails app while testing-
+* provide better error explanations in cucumber with celurity to test without tailing logs
+
+Cheers!
+
+h3. Additional resources
+* "Celerity ajax examples by Alvin Schur":http://github.com/alvinschur/celerity-examples

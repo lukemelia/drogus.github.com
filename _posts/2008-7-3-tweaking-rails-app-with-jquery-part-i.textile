@@ -1,0 +1,287 @@
+--- 
+title: Tweaking Rails app with jQuery, part I
+layout: post
+categories: ['en']
+---
+<div class="quick-links">
+
+Quick links:
+
+*  "completed demo":http://mugshots.drogomir.com/js/step2/mugshots (demo is reseted every few hours)
+* "sources of application on github":http://github.com/drogus/mugshots/tree/master ("or download tarball":http://github.com/drogus/mugshots/tarball/master)
+
+</div>
+
+I'm in the train from "Zgorzelec to Warsaw":http://maps.google.com/maps?f=d&hl=en&geocode=&saddr=Zgorzelec,+Poland&daddr=warsaw,+poland&sll=37.0625,-95.677068&sspn=58.470251,108.984375&ie=UTF8&ll=51.604372,17.578125&spn=5.815072,13.623047&z=6 returning from my girlfriend's place. Polish trains are like turtles, so I will have pretty much time for writing ;-)
+
+I've wrote (or maybe it's better to say copy&paste) little rails app like in "Mike Clark's tutorial for attachment_fu":http://clarkware.com/cgi/blosxom/2007/02/24. A few months ago there was "Mugshots exhibition in Yours Gallery":http://www.yoursgallery.pl/exhibitions.php?action=details&exh_id=44&setlang=en in Warsaw based on "work of Peter Doyle":http://www.amazon.com/City-Shadows-Sydney-Photographs-1912-1948/dp/1876991208/ref=pd_bbs_sr_2?ie=UTF8&s=books&qid=1215106900&sr=8-2. I saw it with Kathleene, she took some pictures. Great! I have material to fill my new app, what else could I possibly dream of?! (yeah... macbook, but it's obvious ;-).
+
+Now you can admire my hard work: "mugshots.drogomir.com/js/no-javascript/mugshots/":http://mugshots.drogomir.com/js/no-javascript/mugshots/
+
+But wait... It's not so cool... where are all those shiny javascript effects? Don't worry. I will show you how to spice this dish.
+
+We will need:
+* "jQuery":http://jquery.com/
+* "jQuery form plugin":http://www.malsup.com/jquery/form/
+* "jQuery livequery plugin":http://brandonaaron.net/docs/livequery/
+* "jQuery upload progress":http://github.com/drogus/jquery-upload-progress/
+* "jquery blockUI (used by multifile)":http://malsup.com/jquery/block/
+* "jquery mutli file":http://www.fyneworks.com/jquery/multiple-file-upload/
+* "jquery lightBoxFu":http://github.com/drogus/lightbox-fu/tree/master
+* "lightbox":http://leandrovieira.com/projects/jquery/lightbox/
+
+I've pushed application to github, so you can see entire code. Clone it or "grab the tarball":http://cdsc
+
+There is one thing that is not straight forward. @main_js variable in app/views/layouts/main.rhtml:
+
+<pre><code class="ruby">
+<%= javascript_include_tag @main_js %>
+</code></pre>
+
+It's there for changing javascript file loaded. When url is app.com/js/some_javascript_file/mugshots, @main_js should be "some_javascript_file.js". I've done this to have possibility to show you app with different javascript files without changing the code. See routes and mugshots_controller.rb to find out how it was done (or run "rake routes" in app dir to see routes).
+
+Lets begin.
+
+What to do first? It's all about uploading files, so I would add upload progress bar to form in "mugshots.drogomir.com/mugshots/new":http://mugshots.drogomir.com/mugshots/new. To implement it you will need some kind of server module:
+
+* "Apache upload progress module":http://drogomir.com/blog/2008/6/18/upload-progress-bar-with-mod_passenger-and-apache
+* "Nginx upload progress module":http://wiki.codemongers.com/NginxHttpUploadProgressModule
+* "Lighttpd upload progress":http://upload.lighttpd.net/
+
+You have to install and enable one of the above modules to make progress bar work.
+
+Then add some javascript to applications.js. This example is using "LightBoxFu": - little script that I wrote to show progress bar as an overlay. It's based on "Riddle's work":http://riddle.pl/ - all positioning is in CSS (except expressions for IE) so it's really light and fast. Ideal for such a task. If you don't like lightBoxFu you can use any other form of displaying message (you can use some other lightbox with displaying code function or even blockUI plugin).
+
+<pre><code class="javascript">
+// handy trick, if we can't use $ beaceuse jQuery.noConflict
+// was used, jQuery is passed as argument in document ready
+// so we can name it $
+jQuery(function($) {
+  // add upload progress to our form
+  $('form.progress').uploadProgress({
+    start:function(){
+      // after starting upload open lightBoxFu with our bar as html
+      $.lightBoxFu.open({
+        html: '<div id="uploading"><span id="received"></span><span id="size"></span><br/><div id="progress" class="bar"><div id="progressbar">&nbsp;</div></div><span id="percent"></span></div>',
+        width: "250px",
+        closeOnClick: false
+      });
+      jQuery('#received').html("Upload starting.");
+      jQuery('#percent').html("0%");
+    },
+    uploading: function(upload) {
+      // update upload info on each /progress response
+      jQuery('#received').html("Uploading: "+parseInt(upload.received/1024)+"/");
+      jQuery('#size').html(parseInt(upload.size/1024)+" kB");
+      jQuery('#percent').html(upload.percents+"%");
+    },
+    interval: 2000,
+    /* if we are using images it's good to preload them, safari has problems with
+       downloading anything after hitting submit button. these are images for lightBoxFu
+       and progress bar */
+    preloadImages: ["/images/overlay.png", "/images/ajax-loader.gif"]
+  });
+});
+</code></pre>
+    
+And some styling for progress bar:
+<pre><code class="css">
+  #progress {
+  margin: 8px;
+  width: 220px;
+  height: 19px;
+}
+
+#progressbar {
+  background: url('/images/ajax-loader.gif') no-repeat;
+  width: 0px;
+  height: 19px;
+}
+</code></pre>
+
+That's it, just add "progress" class to your form and progress bar is working:
+
+<pre><code class="ruby">
+<% form_for(:mugshot, :url => mugshots_path, 
+                      :html => { :multipart => true, :class => "progress" }) do |f| -%>
+</code></pre>
+
+Uploading files looks much better right now, check it here: "http://mugshots.drogomir.com/js/progress/mugshots/new":http://mugshots/drogomir.com/js/progress/mugshots/new
+
+So what now? I find the "add photo, click New mugshot, add photo" scenerio annoying. We could add more than one file on each submit. For that we will use jquery.MultiFile.js. This one is a bit tricky, cause we will need to tweak code handling uploads also.
+
+Javascript enabling mutlifile:
+
+<pre><code class="javascript">
+jQuery(function($) {
+  $('.multi-file').each(function() {
+    // change name of element before applying MultiFile
+    // so array of files can be send to server with mugshot[uploaded_data][]
+    $(this).attr('name', $(this).attr('name') + '[]');
+  }).MultiFile();
+});
+</code></pre>
+    
+We must also add "multi-file" class to file field:
+    
+<pre><code class="ruby">
+<%= f.file_field :uploaded_data, :class => 'multi-file' %>
+</code></pre>
+    
+From javascript point of view that's all. Let's see how uploaded photos are handled by rails app:
+    
+<pre><code class="ruby">
+@mugshot = Mugshot.new(params[:mugshot])
+</code></pre>
+    
+So mugshot.uploaded_data is filled with data from <code>params[:mugshot][:uploaded_data]</code>. Good for one file. But with array of files we should create Mugshot for each file. I would add a method in model:
+    
+<pre><code class="ruby">
+  def self.handle_upload(mugshot_params)
+    # array for not saved mugshots
+    mugshots = []
+    if mugshot_params[:uploaded_data].kind_of?(Array)
+      mugshot_params[:uploaded_data].each do |p| 
+        unless p.blank?
+          mugshot = Mugshot.new(:uploaded_data => p)
+          mugshots << mugshot unless mugshot.save
+        end
+      end
+    else
+      mugshot = Mugshot.new(mugshot_params)
+      mugshots << mugshot unless mugshot.save
+    end
+    mugshots
+  end
+</code></pre>
+
+and slightly change controller code:
+        
+<pre><code class="ruby">
+  def create
+    @mugshots = Mugshot.handle_upload(params[:mugshot])
+      
+    # if @mugshots is empty there are no errors
+    if @mugshots.blank?
+      flash[:notice] = 'Mugshot was successfully created.'
+      redirect_to mugshots_url
+    else
+      render :action => :new
+    end
+  end
+</code></pre>
+
+Only one problem left. Validation.
+
+Easiest way is to change error_messages_for:
+        
+<pre><code class="ruby">
+<%= error_messages_for :object => @mugshots %>
+</code></pre>
+
+It works. But suppose you are uploading 3 files and 2 of them are too big. You will end with:
+
+* Size is not included in the list
+* Size is not included in the list
+
+Which one was added? Some lottery here...
+
+I would tweak attachment_fu error messages a bit. By default it uses validates_as_attachment method which simply adds:
+
+<pre><code class="ruby">
+  validates_presence_of :size, :content_type, :filename
+  validate  :attachment_attributes_valid?
+</code></pre>
+
+Instead validates_as_attachment we can isert our new code:
+
+<pre><code class="ruby">
+  validates_presence_of :size, :content_type, :filename, :message => Proc.new { |mugshot| "can't be blank (#{mugshot.filename})" }
+  validate  :attachment_attributes_valid?
+  
+  def attachment_attributes_valid?
+    [:size, :content_type].each do |attr_name|
+      enum = attachment_options[attr_name]
+      errors.add attr_name, "#{ActiveRecord::Errors.default_error_messages[:inclusion]} (#{self.filename})" unless enum.nil? || enum.include?(send(attr_name))
+    end
+  end
+</code></pre>
+
+Now it's a lot more readable:
+      
+* Size is not included in the list (filename.jpg)
+* Size is not included in the list (filename1.jpg)
+
+Submit form looks better now, but viewing files is still ugly. Maybe we could add some lightbox? No problem:
+
+<pre><code class="javascript">
+$('#mugshots li a').lightBox(); 
+</code></pre>
+
+I used "that lightbox":http://leandrovieira.com/projects/jquery/lightbox/ cause I had it configured for my previous rails apps, but pick your favourite one, as there are gazilions of them.
+
+This is first step of tweaking our app. Javascript is in step1.js file: "mugshots.drogomir.com/js/step1/mugshots/new":http://mugshots.drogomir.com/js/step1/mugshots/new
+
+What now? User can upload many files at one submit and see progress bar. What else do we need? Ajax! My preciousssss...
+
+As all children know, XMLHttpRequest can't upload files. What a shame... our new tweaked mugshots app is all about uploading files. Although you can't do it with XHR, there is a way to imitate it. It is obtained by creating an iframe and uploading files to it.
+
+Luckily Mike Malsup has done hard work for us writing "jQuery form plugin":http://www.malsup.com/jquery/form/.
+
+First, we need our form. I would place it instead "New mugshot" link. Link has id="new_mugshot_link", so this piece of code will replace it with form:
+
+<pre><code class="javascript">
+  /* create upload form with multifile instead of new mugshot link */
+  var form = $('<form method="post" enctype="multipart/form-data" class="progress ajax" action="/mugshots">');
+  var label = $('<p><label for="mugshot_uploaded_data">Upload mugshot: </label></p>');
+  var input = $('<input type="file" class="multi-file" id="mugshot_uploaded_data" size="30" name="mugshot[uploaded_data]"/>');
+  label.append(input).appendTo(form);
+  form.append('<p><input type="submit" value="Create" name="commit"/></p>');
+  if (typeof(AUTH_TOKEN) != "undefined") form.append('<input type="hidden" value="'+AUTH_TOKEN+'" name="authenticity_token"/>'); 
+  $('#new_mugshot_link').replaceWith(form);
+</code></pre>
+
+Our form has to be send to an iframe, so we have to apply ajaxForm to it. After replacing link with form we can't figure out when form is actually appended to DOM. To be sure that form is there, we can use livequery. It will fire callback function when 'form.ajax' will be available:
+      
+<pre><code class="javascript">
+  $('form.ajax').livequery(function() {
+    $(this).ajaxForm({iframe: true, success: function (responseText, statusText, form) {
+      var url = $(form).attr('action');
+      /* get new files */
+      $.ajax({
+          url: url,
+          dataType: "script",
+          beforeSend: function(xhr) {xhr.setRequestHeader("Accept", "text/javascript");},
+	  /* we need to update lightbox array to include new files */
+          complete: function() { $('#mugshots li a').lightBox(); }
+      });
+    }});
+  });
+</code></pre>
+
+When new form tag with class "ajax" will be available callback function will be run. iframe option tells form plugin to add hidden iframe (it will handle file upload). 
+
+The above code has ajax call to "/mugshots" url which will run index.js.erb (RJS), so we will need one:
+
+app/views/mugshots/index.js.erb
+<pre><code class="ruby">
+  jQuery('#mugshots').html(<%= js render(:partial => 'mugshot', :collection => @mugshots) %>);
+</code></pre>
+
+
+to handle it we need to use respond_to:
+
+<pre><code class="ruby">
+  respond_to do |format|
+    format.html
+    # layout => false is here beaceuse without it rails are looking
+    # for layouts/index.js.erb
+    format.js { render :layout => false }
+  end
+</code></pre>
+
+Normally I try not to use RJS to keep all my javascript (and ajax) logic in javascript files, but in case of images it isn't so esay. I will write about it and about javascript templating systems in one of the next posts.
+
+Take a look at: "mugshots.drogomir.com/js/step2/mugshots":http://mugshots.drogomir.com/js/step2/mugshots Doesn't it look nice?
+
+There is only one problem :) No ajax validation. After submitting files, javascript can't get any info about errors or uploaded files beaceuse it is treated like normal html request and response is loaded in an iframe. How to fix it? I'll write about it in the next post. :)

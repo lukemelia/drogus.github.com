@@ -1,0 +1,89 @@
+--- 
+title: Upload progress bar with mod_passenger and apache
+layout: post
+categories: ['en']
+---
+*UPDATE*: I found 2 bugs in upload progress module. If you have already installed. update to at least 0.1 version: "http://github.com/drogus/apache-upload-progress-module/commits/0.1":http://github.com/drogus/apache-upload-progress-module/commits/0.1
+
+I've installed "mod passenger":http://www.modrails.com/ on my server recently. It's really great software. Now I don't have to worry about monitoring, nginx proxy, load balancing, big file uploads... and it's fast! With "Ruby Enterprise Edition":http://www.rubyenterpriseedition.com/ it's even faster. 
+
+Personally I don't care about people saying that phusion wants to "promote themselves on REE":http://judofyr.net/posts/ruby-fishy-edition.html as long as it gives faster ruby with lower memory use (but yes, I know, REE is not best choice for a name :).
+
+After installing I've realised that my shiny upload progress bar (thanks to "Upload Progress Module for nginx":http://wiki.codemongers.com/NginxHttpUploadProgressModule) was not working. Oh gods! What a tragedy! 
+
+But fear not. I've written "apache upload progress module":http://github.com/drogus/apache-upload-progress-module/tree/master to have my lovely progress bar back again. As a lazy developer I've implemented reports in the same way as in nginx upload progress, so my applications are working without changing any signle line of code. If you were using nginx upload progress just drop the module, change your config and you're good to go :)
+
+I'm testing it in one of my production servers, but be carefull - it's not well tested in other enviroments (i have gentoo with apache 2.2.8). Any feedback will be helpfull. Give me a note in comments if you encounter any problems.
+
+So you want to be cool and have your own sexy progress bar in your app? Keep reading ;)
+
+To install module you must download it using git:
+<pre><code class="console">git clone git://github.com/drogus/apache-upload-progress-module.git</code></pre>
+or get the package: "http://github.com/drogus/apache-upload-progress-module/tarball/master":http://github.com/drogus/apache-upload-progress-module/tarball/master
+
+To compile/install/activate you have to use apxs2:
+<pre><code class="console">apxs2 -c -i -a mod_upload_progress.c</code></pre>
+
+* -c is for compiling
+* -i is for installing (copy mod_upload_progress.so to apache library dir)
+* -a is for activating (add LoadModule option into your apache conf file)
+
+If you want to install and activate run this command as a root. Otherwise you can just compile and add LoadModule to apache conf:
+<pre><code class="config">LoadModule upload_progress_module path/to/apache-upload-progress-module/.libs/mod_upload_progress.so</code></pre>
+
+Currently there is only one global option:
+<pre><code class="config">UploadProgressSharedMemorySize 1024000</code></pre>
+
+This sets shared memory size to  1M. By default it's 100kB.
+
+To add tracking and reporting upload for a virtual host in apache you will need to add:
+<pre><code class="config">
+<Location />
+    # enable tracking uploads in /
+    TrackUploads On
+</Location>
+
+<Location /progress>
+    # enable upload progress reports in /progress
+    ReportUploads On
+</Location>
+</code></pre>
+
+Now all uploads will be tracked and reports are under /progress
+
+Format of the report is JSON. From nginx wiki:
+
+
+<blockquote>
+The returned document is a JSON text with the possible 4 results:
+
+* the upload request hasn't been registered yet or is unknown: 
+
+new Object({ 'state' : 'starting' })
+
+* the upload request has ended: 
+
+new Object({ 'state' : 'done' })
+
+* the upload request generated an HTTP error: 
+
+new Object({ 'state' : 'error', 'status' : <error code> })
+
+One error code that is interesting to track for clients is HTTP error 413 (Request entity too large)
+
+* the upload request is in progress: 
+
+new Object({ 'state' : 'uploading', 'received' : <size_received>, 'size' : <total_size>})
+
+The HTTP request to this location must have either an X-Progress-ID parameter or X-Progress-ID HTTP header containing the unique identifier as specified in your upload/POST request to the relevant tracked zone. If you are using the X-Progress-ID as a query-string parameter, ensure it is the LAST argument in the URL.</blockquote>
+
+Now the last thing to do is to implement progress bar. I don't like repeating others and "there is great tutorial on setting up upload progress bar with nginx and merb":http://blog.new-bamboo.co.uk/2007/11/23/upload-progress-with-nginx 
+
+*UPDATE*: I released jquery upload progress library with Safari 3 support. More info "here":http://drogomir.com/blog/2008/6/30/upload-progress-script-with-safari-support.
+*UPDATE2*: I've upgraded prototype version to work in Safari.
+
+It's for merb and nginx but if you drop the scripts in your rails app and with apache-upload-progress-module it will work. :) Basically if you have your own code handling uploads (for example using attachment_fu) you can just add javascript and css - it's unobtrusive.
+
+If you're using prototype I've rewritten script and made "a demo":http://drogomir.com/files/blog/prototype-upload-progress/example. "You can also grab files":http://drogomir.com/files/blog/prototype-upload-progress/
+
+I hope you enjoy this article. Progress bar is in my opinion one of the most useful technics - there is nothing more annoying than large file uploading without any info on state of an upload.

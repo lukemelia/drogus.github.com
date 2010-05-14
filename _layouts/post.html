@@ -1,8 +1,19 @@
 ---
 layout: default
 ---
+
+
 <div id="post">
-{{ content }}
+  <h2 class="title">{{ page.title }}</h2>
+
+  {% if page.deprecated %}
+    <div class="deprecated">
+      <span class="warning">Warning!</span>
+      <p>{{ page.deprecated | textilize }}</p>
+    </div>
+  {% endif %}
+
+  {{ content }}
 </div>
 
 <div id="related">

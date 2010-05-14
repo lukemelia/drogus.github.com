@@ -1,0 +1,31 @@
+--- 
+title: JSON-P support for Apache upload progress
+layout: post
+categories: ['en']
+---
+Just a quick note about new feature added to apache upload progress and jquery upload progress libs.
+
+"Ron Evans aka deadprogrammer":http://deadprogrammersociety.blogspot.com/ has added support for JSON-P in "this commit":http://github.com/drogus/apache-upload-progress-module/commit/20fed47119d3ea70b91ccb6a91a9338c8f127304. What does it mean? Cross domain requests are now possible, so if you need such a functionality pull the newest changes.
+
+Here is Ron's description from README:
+<blockquote>
+- JSON-P Support
+
+You can also request progress updates by using JSON-P, if you are uploading the file from a different domain or  subdomain than the web server that is handling your original request. Adding a "callback=yourCallbackFunction" parameter  to your request to the progress server will activate this functionality. 
+
+For example, a request like:
+  http://uploads.yourdomain.com/progress?callback=jsonp123&X-Progress-ID=1234
+  
+Would return the JSON-P function: 
+  jsonp123(new Object({ 'state' : 'uploading', 'received' : 35587, 'size' : 716595, 'speed' : 35587 }));
+  
+The normal JSON request:
+  http://www.yourdomain.com/progress?X-Progress-ID=1234
+
+Would return the JSON data: 
+  new Object({ 'state' : 'uploading', 'received' : 35587, 'size' : 716595, 'speed' : 35587 })
+</blockquote>
+
+Remember to update "jquery upload progress":http://github.com/drogus/jquery-upload-progress/tree/master also, to use jsonp.
+
+Enjoy :)

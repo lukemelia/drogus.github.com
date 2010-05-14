@@ -1,0 +1,16 @@
+--- 
+title: Fixing safe_erb with memcached improved
+layout: post
+categories: ['en']
+---
+Ruby has many structures that are weird and dangerous to some programmers that works with Java or other more "traditional" OO languages. For me it's great and metaprogramming capabilities makes ruby killer in case of DSLs, nice looking APIs and avoiding repeating yourself.
+
+But many problems that are solved with alias_method_chain or method_missing can be solved easier without the code smell. I sometimes find myself designing some weird complex solutions and then, after looking at it saying: "Hey! Why not just use OO features!". I encourage everybody to look critically at every piece of your code that seems to be overkill and can be replaced with standard OO design.
+
+One of examples is "fixing memcached and safe_erb duet with alias_method_chain":http://www.nfjsone.com/blog/david_bock/2009/03/fixing_safe_erb_with_memcached_fragments.html I don't know if this solution worked in older versions of rails, but in 2.3 I got stack level too deep error. After some thinking I've just created subclass of MemCacheStore:
+
+<script src="http://gist.github.com/110488.js"></script>
+
+And then you can simply set it as cache store: config.cache_store = :my_mem_cache_store
+
+And that's it, no alias method chain :)

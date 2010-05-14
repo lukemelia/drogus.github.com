@@ -200,3 +200,19 @@ blockquote {
   padding-left: 20px !important;
   font-style: italic;
 }
+
+.deprecated {
+  background-color: #FDD;
+  border: 1px solid #FBB;
+  padding: 10px;
+}
+
+#post > .title {
+  color: black;
+  padding-bottom: 0px;
+  margin-bottom: 10px;
+}
+
+#home > h1 > a {
+  color: #A00;
+}

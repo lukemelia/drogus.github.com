@@ -1,0 +1,45 @@
+--- 
+title: My git workflow
+layout: post
+categories: ['en']
+---
+I know that this post may be obvious for experienced git users, but it may be useful for some of you.
+
+Github has "added default branch picking":http://github.com/blog/421-pick-your-default-branch recently. It's great, as you don't have to use master branch as your main branch. I usually have three "main" branches in my repo - production, staging and development. 
+
+The main point of it is to have separate branch for each environment (sometimes I skip staging, but it's often wise to have some point between development and production). My main problem with git (or maybe rather with my lack of knowledge about git) in the very beginning of using git was to learn how to use branches efficiently. After some time with git I've noticed that it's best to keep each fix or idea in separate branch.
+
+One crucial thing is to inherit from production when it's possible. Let's say you have those main branches I mentioned before. There is a bug #345 in bug tracker and you want to fix it and merge into production after showing results to the client. The best way is to begin with production:
+
+<pre><code class="console">
+git checkout -b bug345 production
+</code></pre>
+
+It will create new branch bug345 with production as a parent branch. Now:
+
+<pre><code class="console">
+# fix the bug
+git commit -m "Fixed the nasty bug #345"
+</code></pre>
+
+Sometimes client doesn't need reviewing the changes but when he does you should have ability to show it and merge it to the production branch later. 
+
+<pre><code class="console">
+git checkout staging
+git merge bug345
+# deploy staging
+</code></pre>
+
+After the client approval of your solution you can merge the bugfix to the production branch:
+
+<pre><code class="console">
+git checkout production
+git merge bug345
+# deploy production
+# you can remove bug345 branch now
+git branch -d bug345
+</code></pre>
+
+The most important thing in this process is to always inherit from production branch, unless you need changes from other branches. Otherwise you could merge some needless junk from other branches or have to cherry-pick individual commits. With above solution everything is clean and you are sure that that you will merge only what you need.
+
+Hope it will help :)

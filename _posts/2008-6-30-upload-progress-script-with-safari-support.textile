@@ -1,0 +1,27 @@
+--- 
+title: Upload progress script with safari support
+layout: post
+categories: ['en']
+---
+Quick links:
+* Source on github for jquery version: "http://github.com/drogus/jquery-upload-progress":http://github.com/drogus/jquery-upload-progress
+* Source on github for prototype version: "http://github.com/drogus/prototype-upload-progress":http://github.com/drogus/prototype-upload-progress
+* jQuery demo: "http://drogomir.com/files/blog/jquery-upload-progress/example":http://drogomir.com/files/blog/jquery-upload-progress/example
+* Prototype demo: "http://drogomir.com/files/blog/prototype-upload-progress/example":http://drogomir.com/files/blog/prototype-upload-progress/example
+* "Installing apache upload progress":http://drogomir.com/blog/2008/6/18/upload-progress-bar-with-mod_passenger-and-apache
+
+Recently I've wrote about "apache upload progress module":http://drogomir.com/blog/2008/6/18/upload-progress-bar-with-mod_passenger-and-apache. I work mainly on linux and I haven't check my scripts on safari. It was working even on IE, what possibly could be harder to obtain? ;-) Some people reported that demo is not working on safari and Michele "resolved the problem":http://drogomir.com/blog/2008/6/18/upload-progress-bar-with-mod_passenger-and-apache#comment-13 (thanks Michele :).
+
+Solved! The only thing to do was to open WinXP on "VirtualBox":http://www.virtualbox.org/ and check it on Safari 3. Michele's solution worked well, but to make it work there must be html page with given structure and javascript. I like "one file" easy to use scripts without any issues with static files :) So what? Create an iframe dynamically, load scripts dynamically, one file, the only thing that user will have to set is path to scripts. 
+
+With Safari? No, not really. I've wrote it in a few minuttes and checked in firefox. It worked, great, now safari. Nope....
+
+Although Safari have great CSS support, it is really terrible with Javascript. WYSIWYG, javascript history, ajax issues, now the upload progress and iframes. In edge case libraries I often see hacks for IE and safari mainly.
+
+Luckily Apple released Windows version of safari and I can check my scripts and pages on safari. Good... developer tools don't work, though... I had to do some alert-like IE style debugging ;-) After many hours of trying new more and more insane ways to create iframe and load scripts into it, code with document.write() worked!
+
+"Check the commit on github":http://github.com/drogus/jquery-upload-progress/commit/cc8ebce8acbb54febb3d24c7a77118c1501a922f. Lines 18-22 especially. And 28-line issue with safari not waiting to load previous script.
+
+It's really sad that after working on firefox with firebug or opera with developer tools I have to fight with Safari which is supposed to be modern browser. I know that on Mac developing scripts for safari is easier, thanks to working debug tools, but hey! I work on Linux. Why do I have to run Safari on Wine or VirtualBox, lacking debug tools? It's a pain. I feel like I'm working on explorer...
+
+-I will add prototype version- and possibly some usage page shortly (for know look at the "demo code":http://drogomir.com/files/blog/jquery-upload-progress/example).
