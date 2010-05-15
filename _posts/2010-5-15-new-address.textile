@@ -3,13 +3,13 @@ title: New address
 layout: post
 categories: ['en']
 ---
-I haven't written anything here for a while now. It was partially caused by a little mess in my blogs. I had 2 blogs with addresses blog.drogomir.com (for Polish blog) and drogomir.com/blog (for English blog)... I didn't quite like addresses (hey? which one is in which language?) and keeping them in separate engines (typo and mephisto). Each time I wanted to start new post, I felt that I should change that situation right away. The problem is, I never had that much will to actually do something and after few minutes of checking solutions I usually stopped without any effects.
+I haven't written anything here for a while now. It was partially caused by a little mess in my blogs. I had 2 blogs with addresses blog.drogomir.com (for Polish blog) and drogomir.com/blog (for English blog)... I didn't quite like addresses (hey? which one is in which language?) and keeping them on separate engines (typo and mephisto). Each time I wanted to start new post, I felt that I should change that right away. The problem is, I never had that much will to actually do something and after few minutes of checking solutions I usually stopped without any effects.
 
 Finally I've merged my blogs and moved it to current address: "piotrsarnacki.com":http://piotrsarnacki.com.
 
-The blog is "hosted on github":http://github.com/drogus/drogus.github.com wiht help of "jekyll":http://github.com/mojombo/jekyll. Jekyll is great so far. Its simplicity is impressive and I don't have to worry about any server related issues. Layout is borrowed from "Tom Presto-Werner's site":http://tom.preston-werner.com. It helped me start within a few minutes, but I will try to change it in a few days.
+The blog is "hosted on github":http://github.com/drogus/drogus.github.com with help of "jekyll":http://github.com/mojombo/jekyll. Jekyll is great so far. Its simplicity is impressive and I don't have to worry about any server related issues. Layout is borrowed from "Tom Preston-Werner's site":http://tom.preston-werner.com (layout is MIT licensed). It helped me start within a few minutes, but I will try to change it in a few days.
 
-Although old RSS feed still should work, I recommend to use new one: "feeds.feedburner.com/piotrsarnacki":http://feeds.feedburner.com/piotrsarnacki. All the feeds available for this blog are: 
+Although old RSS feed still works, I recommend to use new one: "feeds.feedburner.com/piotrsarnacki":http://feeds.feedburner.com/piotrsarnacki. All the feeds available for this blog are: 
 
 * "feeds.feedburner.com/piotrsarnacki":http://feeds.feedburner.com/piotrsarnacki - English content
 * "feeds.feedburner.com/piotrsarnacki-pl":http://feeds.feedburner.com/piotrsarnacki-pl - Polish content (available on "piotrsarnacki.com/pl":http://piotrsarnacki.com/pl)
