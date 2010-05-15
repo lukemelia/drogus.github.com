@@ -13,7 +13,7 @@ layout: nil
    <email>drogus@gmail.com</email>
  </author>
 
- {% for post in site.categories.en %}
+ {% for post in site.categories.pl %}
  <entry>
    <title>{{ post.title }}</title>
    <link href="http://piotrsarnacki.com{{ post.url }}"/>
