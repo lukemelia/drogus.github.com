@@ -1,0 +1,23 @@
+--- 
+title: "Zmiana adresu"
+layout: post
+categories: ['pl']
+---
+Od dłuższego czasu nie pisałem nic na blogu. Było to częściowo spowodowane tym, że chciałem zmienić jego adres i połączyć z drugim blogiem (polski blog miał adres blog.drogomir.com, angielski drogomir.com/blog, kto w ogóle wymyśla taką dziwną konfigurację? nawet ja się najczęściej gubiłem pod którym adresem jest który blog). Ilekroć siadałem do edytora, żeby napisać coś sensownego, do głowy przychodziła mi myśl: przenieś w końcu te blogi! Zamykałem edytor, otwierałem internety, żeby zobaczyć na co zmigrować oba blogi i... po 10 minutach dawałem sobie spokój. W ostatnich dniach zebrałem się wreszcie, żeby przenieść oba blogi na nowy adres. Jak łatwo możecie zauważyć nowy adres to "piotrsarnacki.com":http://piotrsarnacki.com. Posty w języku polskim są dostępne pod adresem "piotrsarnacki.com/pl":http://piotrsarnacki.com/pl. Nowe adresy dla RSSów to odpowiednio:
+
+* "feeds.feedburner.com/piotrsarnacki-all":http://feeds.feedburner.com/piotrsarnacki-all - wszystkie posty
+* "feeds.feedburner.com/piotrsarnacki":http://feeds.feedburner.com/piotrsarnacki - posty angielskie
+* "feeds.feedburner.com/piotrsarnacki-pl":http://feeds.feedburner.com/piotrsarnacki-pl - posty polskie
+
+Posty powinny być też dostępne pod obecnym adresem RSS, ale zachęcam do zmiany na nowy adres :)
+
+Od strony technicznej: blog jest "hostowany na githubie":http://github.com/drogus/drogus.github.com z pomocą "jekylla":http://github.com/mojombo/jekyll. Na początku miałem wątpliwości czy będzie to dobry pomysł. Jekyll jest niezwykle prosty w użyciu i ma przy tym spore możliwości, ale przy okazji traci się trochę elastyczności na rzecz wygenerowanego statycznego HTMLa. Tylko... tak naprawdę, po co mi coś więcej? Całego bloga trzymam w repozytorium gita, więc łatwo jest śledzić historię zmian. Mam darmowy hosting na githubie, więc nie muszę się już martwić o utrzymanie dla blogów jakiegokolwiek serwera. Posty mogę łatwo dodawać i edytować będąc offline. Wspaniała sprawa. :)
+
+Layout bloga jest w tym momencie skopiowany ze strony "Toma Preston-Werner":http://tom.preston-werner.com/ (tak, to ten od githuba ;-) ze względu na to, że wszystko oprócz postów jest na licencji MIT, a dzięki temu mogłem praktycznie w 10 minut postawić bloga (więcej czasu zajęło przeniesienie postów z typo i mephisto, ale dzięki skryptom przygotowanym specjalnie dla jekylla, także ta operacja była prawie bezbolesna). Część postów poszło do kosza ze wzgłedu na ich przedawnienie (przez te kilka lat zmieniło się w railsach całkiem dużo i nikogo już pewnie nie obchodzi, że właśnie wyszły railsy w wersji 1.2-rc2), część postaram się oznaczyć "jako deprecated":http://piotrsarnacki.com/2009/06/16/cucumber-and-celerity-testing-unobtrusive-javascript (swoją drogą zrobienie prostego mechanizmu do oznaczania w ten sposób postów jest w jekyllu banalnie proste, skrobnę później o tym posta).
+
+Na koniec muszę się jeszcze pochwalić. Prawdodpodobnie większość z was wie o tegorocznym "Ruby Summer of Code":http://rubysoc.org. Dla tych którzy nie wiedzą: w tym roku żadne projekty związane bezpośrednio z Ruby nie dostały się na Google Summer of Code, więc społeczność (mocno wspierana przez "Engine Yard":http://engineyard.com, który z tego co pamiętam jest inicjatorem pomysłu) zorganizowała sobie własne Summer of Code. W 3 dni zebrano 100 tysięcy dolarów, co pozwoli sfinansować 20 projektów. Wśród owych 20 projektów znalazło się miejsce dla 2 Polaków:
+
+* *Marcin Raczkowski* - będzie pracował nad Identity Map dla ActiveRecord
+* *Piotr Sarnacki* (czyli skromny autor tego oto blogusia ;-) - będę pracował nad mountable apps i panelem admin do Railsów 3 (w zasadzie sytuacja jest trochę bardziej skomplikowana, ponieważ moje zgłoszenia zostały połączone ze zgłoszeniami "Bogdana Gazy":http://github.com/hurrycane i pracujemy w jednym projekcie, przy czym ja jestem bardziej odpowiedzialny za część dotyczącą mountable apps, a Bogdan za rails-admin)
+
+Pracę nad projektem zacznę prawdopodobnie w połowie czerwca i na blogu postaram się informować na bieżąco o postępach.
