@@ -6,8 +6,6 @@ categories: ['pl']
 ---
 Dawno nic nie pisałem, przez co mogło się niektórym wydawać, że blog umarł śmiercią naturalną. Bądź też ja umarłem (śmiercią niekoniecznie naturalną). Jak można dość łatwo zauważyć myśli o owych śmierciach (dwóch! chwila nieuwagi i sytuacja ociera się o żałobę narodową) były mocno przesadzone.
 
-Sytuacja taka jest spowodowana wieloma czynnikami, które sprowadzają się do jednego słowa: zmiany. W skrócie: rzuciłem pracę, prawdopodobnie rzucam studia, siedzę właśnie w Rybniku i razem z paroma osobami zaczynam tworzenie pewnej netowej aplikacji. O której więcej na pewno napiszę w (nie)dalekiej przyszłości.
-
 Na dobry początek reanimacji ledwo dychającego już blogusia tytułowe przydatne linki:
 * "Toggl":http://toggl.com - podczas pracy, szczególnie w domu, można bardzo łatwo zacząć zajmować się tysiącem rzeczy, które przerwą kodzenie. Toggl jest serwisem, który pozwala zmierzyć realny czas pracy. Dodaję nowy projekt, klikam "start" i zegar zaczyna tykać. I tyka tak sobie licząc godziny pracy. Od kilku dni takie liczenie pomaga mi bardzo w skupieniu nad pisaniem. Jak już chcę kliknąć na zakładkę z google readerem, to zaraz przychodzi myśl, że będę musiał przystopować toggl i realny czas pracy będzie dużo mniejszy. 
 * "jQuery doczekało się kolejnej już wersji":http://jquery.com/blog/2007/08/24/jquery-114-faster-more-tests-ready-for-12/. Jak zwykle dużo nowych bajerów i jeszcze szybsze działanie (a po ostatnim "800% faster" myślałem, że dużo więcej nie wyciągną). Właściwie to na jQuery przesiadłem się dosyć niedawno i jako były-wielki-fan(tm) script.aculo.us czuję się zobligowany do napisania artykułu o tym co otworzyło mi oczy. Beware!
