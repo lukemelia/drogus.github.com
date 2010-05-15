@@ -18,26 +18,41 @@ I'm testing it in one of my production servers, but be carefull - it's not well 
 So you want to be cool and have your own sexy progress bar in your app? Keep reading ;)
 
 To install module you must download it using git:
-<pre><code class="console">git clone git://github.com/drogus/apache-upload-progress-module.git</code></pre>
+
+{% highlight bash %}
+git clone git://github.com/drogus/apache-upload-progress-module.git
+{% endhighlight %}
+
 or get the package: "http://github.com/drogus/apache-upload-progress-module/tarball/master":http://github.com/drogus/apache-upload-progress-module/tarball/master
 
 To compile/install/activate you have to use apxs2:
-<pre><code class="console">apxs2 -c -i -a mod_upload_progress.c</code></pre>
+
+{% highlight apache %}
+apxs2 -c -i -a mod_upload_progress.c
+{% endhighlight %}
 
 * -c is for compiling
 * -i is for installing (copy mod_upload_progress.so to apache library dir)
 * -a is for activating (add LoadModule option into your apache conf file)
 
 If you want to install and activate run this command as a root. Otherwise you can just compile and add LoadModule to apache conf:
-<pre><code class="config">LoadModule upload_progress_module path/to/apache-upload-progress-module/.libs/mod_upload_progress.so</code></pre>
+
+{% highlight apache %}
+LoadModule upload_progress_module path/to/apache-upload-progress-module/.libs/mod_upload_progress.so
+{% endhighlight %}
+
 
 Currently there is only one global option:
-<pre><code class="config">UploadProgressSharedMemorySize 1024000</code></pre>
+
+{% highlight apache %}
+UploadProgressSharedMemorySize 1024000
+{% endhighlight %}
 
 This sets shared memory size to  1M. By default it's 100kB.
 
 To add tracking and reporting upload for a virtual host in apache you will need to add:
-<pre><code class="config">
+
+{% highlight apache %}
 <Location />
     # enable tracking uploads in /
     TrackUploads On
@@ -47,7 +62,7 @@ To add tracking and reporting upload for a virtual host in apache you will need 
     # enable upload progress reports in /progress
     ReportUploads On
 </Location>
-</code></pre>
+{% endhighlight %}
 
 Now all uploads will be tracked and reports are under /progress
 
