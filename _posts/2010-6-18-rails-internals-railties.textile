@@ -1,0 +1,58 @@
+--- 
+title: "Rails internals: Railties"
+layout: post
+categories: ['en']
+---
+I'm going to start my RSoC work next week, but I as a preparation for real work I started reading through Rails codebase. I will try to document my findings on this blog, I hope it will be helpful for people that would like to know Rails internals.
+
+One of the first findings of reading Rails 3 code is that it's really simple compared to previous Rails versions. Boot process doesn't need rubygems magic anymore. Ruby features are used to make Rails flexible without need of some crazy hacks. alias_method_chain is not used anymore, which makes it much easier to understand code. These are really great news for all Rails devs, especially plugins maintainers. But hey, enough already known facts, let's get to the point!
+
+The core class of Rails is Railtie. If you are a plugin developer, you will probably want to take a closer look at that. Although Railtie is not required in every plugin, it's handy if you want to hook into Rails boot process, create intializers or add a rake tasks. For more information you can read about "Railtie in docs":http://edgeapi.rubyonrails.org/classes/Rails/Railtie.html So what's Railtie? It's a simple class that is capable of loading generators, tasks, middlewares and adding subscribers. One of the things that I've noticed in Railtie (and almost any other class in Rails) is usage of autoload method. I've never heard of autoload before and it seems that's very handy method. From rubydocs:
+
+bq. Registers filename to be loaded (using Kernel::require) the first time that module (which may be a String or a symbol) is accessed.
+
+{% highlight ruby %}
+  autoload(module, filename) => nil
+  autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
+{% endhighlight %}
+
+The great thing in autoload is its laziness. It will not load given file, if module is not accessed. How does Rails use autoload in Railtie? It autoloads Configurable and Configuration modules. As Railtie doesn't need configuration on its own, it includes it in classes that inherit from Railtie ("code":http://github.com/rails/rails/blob/v3.0.0.beta4/railties/lib/rails/railtie.rb#L170). That way, those 2 files will not be loaded unless Railtie subclass is created. Someone could argue that Railtie will not be probably used alone, without any subclasses, as Railtie is much more like abstract class, but it's really good pattern and it's consistently used across other classes in Rails.
+
+Getting back to Rails itself. The next class in hierarchy is "Engine":http://edgeapi.rubyonrails.org/classes/Rails/Engine.html. Engine is much closer to full stack Rails app. In fact application is a bit more specialized Engine. That makes sharing an application as easy as converting it to engine. So, what's Engine? Basically it's Railtie with ability to set load paths for views, controllers, helpers, locales etc. That's it? Nothing more? That simple? Yep, that's right.
+
+Now it's time for Application. Application is a subclass of Engine and it's capable of booting the Rails app. As you can "read in the docs":http://edgeapi.rubyonrails.org/classes/Rails/Application.html, Application is singletone and that's why 2 Rails apps can't be run in a single process. So what does exactly Rails application do?
+
+* it loads default middleware stack (it's amazing how much things can be handled by rack middlewares, allowing to keep Rails code simpler)
+* it loads plugins
+* it sets bunch of other things: database, logging, sessions, environment config, cache
+* it loads activesupport (interesting thing, you can set config.active_support.bare to not load 'active_support/all')
+
+It's also interesting how does Rails use OO model to make things simpler. After generating Rails 3 apps you can notice that frameworks are loaded by just requiring their railties:
+
+{% highlight ruby %}
+require "action_mailer/railtie"
+require "active_resource/railtie"
+{% endhighlight %}
+
+The same goes for engines. Ok... but how will Rails know all the railties and engines loaded? As railties and engines are subclasses of Rails::Railtie and Rails::Engine, it's as easy as getting their subclasses: ::Rails::Railtie.subclasses or  ::Rails::Engine.subclasses.
+
+Now let's look how is that all used to boot rails application. As you can see in Rails 3 application, config.ru file looks like:
+
+{% highlight ruby %}
+require ::File.expand_path('../config/environment',  __FILE__)
+run MyApplication::Application
+{% endhighlight %}
+
+As you probably know, object passed to "run" method must respond to :call. Application class does not have "call" method defined, though. How does it work? When you send "call" message to MyApplication::Application, method_missing will be fired and message will be send to application instance. In fact all of the missing methods on MyApplication::Application are delegated to instance:
+
+{% highlight ruby %}
+def method_missing(*args, &block)
+  instance.send(*args, &block)
+end
+{% endhighlight %}
+
+What is instance? As Application is singleton, call to instance method returns instantinated application or instantinates it and then returns the instance. To sum it up, application instance is created on the first request to server (or more generally on first instance method call, but in most cases it will be first request to server). And as we get to the request. How does request's path look like? call method runs call() on app object, which is basically the first middleware. Then, request goes through all the middlewares up to ActionDispatch::Routing::RouteSet, which is responsible for routing request to one of the controllers or other rack apps.
+
+After reading this blog post you should have a pretty good overview of core classes of Rails. I strongly encourage you to dive into Rails code yourself, it's a good way to learn new things about design, object oriented programming in ruby and to pick some cool patterns.
+
+If anyone is interested, I plan to continue Rails internals posts with action pack and routing system. Feedback highly appreciated! Please let me know if you find this kind of information useful or if you think that I missed something or should give more details on any of the parts.
