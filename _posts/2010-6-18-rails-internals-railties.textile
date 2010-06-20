@@ -51,7 +51,9 @@ def method_missing(*args, &block)
 end
 {% endhighlight %}
 
-What is instance? As Application is singleton, call to instance method returns instantinated application or instantinates it and then returns the instance. To sum it up, application instance is created on the first request to server (or more generally on first instance method call, but in most cases it will be first request to server). And as we get to the request. How does request's path look like? call method runs call() on app object, which is basically the first middleware. Then, request goes through all the middlewares up to ActionDispatch::Routing::RouteSet, which is responsible for routing request to one of the controllers or other rack apps.
+What is instance? As Application is singleton, call to instance method returns instantinated application or instantinates it and then returns the instance. Application instance is built on initialization, such behavior is triggered in "Finisher":http://github.com/rails/rails/blob/master/railties/lib/rails/application/finisher.rb
+
+The next question is: how does request's path look like? call() method runs call() on @app object, which is basically the middleware stack. Then, request goes through all the middlewares up to ActionDispatch::Routing::RouteSet, which is responsible for routing request to one of the controllers or other rack apps.
 
 After reading this blog post you should have a pretty good overview of core classes of Rails. I strongly encourage you to dive into Rails code yourself, it's a good way to learn new things about design, object oriented programming in ruby and to pick some cool patterns.
 
