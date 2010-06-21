@@ -34,7 +34,7 @@ require "action_mailer/railtie"
 require "active_resource/railtie"
 {% endhighlight %}
 
-The same goes for engines. Ok... but how will Rails know all the railties and engines loaded? As railties and engines are subclasses of Rails::Railtie and Rails::Engine, it's as easy as getting their subclasses: ::Rails::Railtie.subclasses or  ::Rails::Engine.subclasses.
+The same goes for engines. Ok... but how will Rails know all the railties and engines loaded? As railties and engines are subclasses of Rails::Railtie and Rails::Engine, it's as easy as getting their subclasses: ::Rails::Railtie.subclasses or  ::Rails::Engine.subclasses. Quick note on <code>subclasses</code>: it's not ruby method, subclasses are gathered using <code>inherited</code> method ("code":http://github.com/rails/rails/blob/v3.0.0.beta4/railties/lib/rails/railtie.rb#L171).
 
 Now let's look how is that all used to boot rails application. As you can see in Rails 3 application, config.ru file looks like:
 
