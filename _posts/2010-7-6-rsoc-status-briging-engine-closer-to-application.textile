@@ -1,0 +1,98 @@
+--- 
+title: "RSoC status: bringing engines closer to application"
+layout: post
+categories: ['en']
+---
+
+I've been working for Ruby Summer of Code for last 2 weeks and so far it's great! In this post I will try to sum up the work on engines and outline a couple of problems that are still not solved.
+
+The first idea for RSoC was to bring Rails::Engine closer to Rails::Application. One of the long term targets is to allow to run more than one Application instance in one process. "As I described in my last post":http://piotrsarnacki.com/2010/06/18/rails-internals-railties/, application is a bit more specialized engine, so while moving most of the functionalities from Application to Engine, I could identify and solve most of the problems with running several apps in one process.
+
+First things first. What can Engine do right now and where is it used in Rails? When you drop anything in vendor/plugins directory, it will implicitly be declared as Engine. The features of engine are:
+
+* everything in app/* works as in application
+* it can load config/routes.rb
+* config/locales/* are automatically picked by I18n
+* config/initializers works as in application
+* engines also have initializers blocks inside the Rails::Engine class to customize rails booting
+* you can customize paths like in application (for example change where controllers are)
+* it can define custom generators
+* rake tasks are loaded from lib/tasks
+
+All these features are great, but we can take it even further. Here is the plan for bringing Rails::Engine closer to Rails::Application. Rails::Engine should:
+
+* be a Rack app
+* have a middleware stack
+* have its own routes
+* allow to store assets in public/
+* be able to run its own migrations
+* be able to load plugins
+* allow to do more configuration
+* allow to namespace models and controller without problems
+
+A few things from that list are already finished (not in rails master yet, on "my fork":http://github.com/drogus/rails/tree/engines for now). I will describe my changes, but beware, this is code that's not currently a part of rails and it can be changed before merging it to rails. Its here for getting feedback mainly.
+
+Engine can be now a rack application by providing rack endpoint:
+
+{% highlight ruby %}
+class Blog::Engine < Rails::Engine
+  endpoint AnyRackApp
+end
+{% endhighlight %}
+
+That code would create engine with AnyRackApp as endpoint. Now you can mount it with:
+
+{% highlight ruby %}
+MyRailsApp::Application.routes.draw do
+  mount Blog::Engine => "/blog"
+end
+{% endhighlight %}
+
+Mount method will tell application router that <code>Blog::Engine</code> is located at "/blog" path. Let's investigate a request to "/blog/posts". At first, it will hit the application and it will be passed through entire application's middleware stack. The last middleware in application is the router. Router will recognize that "/blog" should point to <code>Blog::Engine</code> app, so it will pass the request to <code>Blog::Engine</code>. Then it will be passed through Engine's middleware stack and finally it will hit Engine's rack endpoint.
+
+What’s the point of providing rack app inside engine? Probably this will not be a common scenario, but it allows you to add all functionalities provided by Engines, like initializers, generators, to your rack app. Besides, Engine has its own middleware stack now, so you can easily add some specific middlewares that will be fired only on requests for engine:
+
+{% highlight ruby %}
+class Blog::Engine < Rails::Engine
+  middleware.use Rack::Subdomain
+end
+{% endhighlight %}
+
+By default endpoint is set to <code>routes</code>, probably a more common scenario.
+
+Currently if you want to add your own routes, you have to hardcode it in application's routes. It's a bit limited, as you cannot easily change the place where the engine is mounted. With Engine being able to use its own router, you can mount it anywhere you want, even using dynamic scopes.
+
+{% highlight ruby %}
+# APP/config/routes.rb
+MyRailsApp::Application.routes.draw do
+  mount Blog::Engine => "/blog"
+end
+
+# ENGINE/lib/blog/engine.rb
+class Blog::Engine < Rails::Engine
+end
+
+# ENGINE/config/routes.rb
+Blog::Engine.routes.draw do
+  resources :posts
+end
+{% endhighlight %}
+
+With such setup, <code>Blog::Engine</code> is mounted at "/blog". A request to "/blog/posts" will fire posts controller inside the engine. It’s simple as that! However, as we are going to see in another blog post, if you want to mount an engine using a dynamic route, as "/:company/blog", we need to consider different scenarios on URL Recognition and Generation. Currently if you use <code>posts_path</code>, it will generate <code>/posts</code>. The problem is, if you're in application you should prepend prefix for mounted app, so it would be "/company/blog/posts".
+
+Next important thing for engines working as full rails apps is public folder. Currently you can for example symlink engine's public folder in your application. It's ok, but there is much cleaner way to do it: use ActionDispatch::Static, which will serve static files from given directory. At first when I heard that idea, I thought that it will much slower than serving those files with web server, but according to Yehuda Katz, it should be really fast in practice and many server setups could actually cache it (for example with Varnish). If it's still not fast enough you can just not enable serving static files, make a symlink and serve it with webserver.
+
+In addition to all that features, engines can load its own set of plugins now. Right now, it's really simple implementation without any check for duplicating plugins, but I think we will consider such thing. Personally I hope that more and more people will just start using gem plugins with its own dependencies, but there are still many apps with <code>vendor/plugins</code> full of plugins.
+
+One of the things that has not been implemented yet is migration support. There is quite long "discussion":https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/2058 on it on lighthouse and a "blog post with a few solutions described":http://interblah.net/plugin-migrations, but there is sill no consensus on that one. If you have any thoughts on that topic, you can add a comment on lighthouseapp.
+
+The last problem that I will talk about (but certainly not last problem that will appear) is namespacing. For better encapsulation all of the controllers, helpers and models should be namespaced. The problem is, currently if you would namespace a controller or model it will not work as intended. Given:
+
+{% highlight ruby %}
+class Blog::PostsController < Blog::ApplicationController
+end
+{% endhighlight %}
+
+it will affect application in many places. Using that controller in routes will also require namespacing it with: "blog/posts#index", which is probably not something that we want for all the routes. In case of models, most of ORMs will name table for <code>class Blog::Post</code> as "blog_posts". It could be actually ok, as it will help to avoid name conflicts, but it's not always desired behavior.
+
+I will appreciate any ideas and thoughts on that topic. Anything, like API ideas, feature requests or solutions to some problems will be welcome and will help me with delivering better mountable apps. Stay tuned for the next post on RSoC status: routes. I promise you will not have to wait for it for the next 2 weeks ;-)
