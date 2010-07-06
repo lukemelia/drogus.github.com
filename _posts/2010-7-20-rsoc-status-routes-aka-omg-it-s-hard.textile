@@ -1,0 +1,196 @@
+--- 
+title: "RSoC status: routes (a.k.a OMG it's hard)"
+layout: post
+categories: ['en']
+---
+
+In my last post I briefly described some of the RSoC changes and plans. One of the things that I left is router. The topic is much harder and I think it deserves separate blog post.
+
+For the good start, let's identify things to consider:
+
+* recognition
+* generation
+* named routes from more than one router (for example <code>posts_path</code>)
+
+h2. Recognition
+
+At the beginning I would like to explain how does recognition work. Here is a simple example of engine mounted in application:
+
+{% highlight ruby %}
+# APP/config/routes.rb
+Foo::Application.routes.draw do
+  resources :users
+  mount Blog::Engine => "/blog"
+end
+
+# ENGINE/config/routes.rb
+Blog::Engine.routes.draw do
+  resources :posts
+end
+{% endhighlight %}
+
+As you can see engine provides :posts resource and it's mounted at /blog path. Let's study simple request to our blog:
+
+{% highlight ruby %}
+GET /blog/posts
+{% endhighlight %}
+
+Application's router will match the first part of the path, which is <code>/blog</code>, with <code>/blog</code> mount point and pass the request to rack app mounted there (which in that case is <code>Blog::Engine</code>). To allow engine recognizing path properly it needs to pass <code>/posts</code> as a path. The <code>/blog</code> (which I will call prefix later on) is not a part of mounted engine, but we don't want to loose that information by simply removing it from PATH. In that case <code>/blog</code> prefix is attached to <code>env["SCRIPT_NAME"]</code> (<code>SCRIPT_NAME</code> is part of "rack's spec":http://rack.rubyforge.org/doc/files/SPEC.html). That way, engine will get only <code>/posts</code> part as PATH, which will allow to properly recognize it.
+
+The only one problem with recognition is connected with rack middlewares. Consider such example:
+
+{% highlight ruby %}
+# APP/config/routes.rb
+Foo::Application.routes.draw do
+  mount Blog::Engine => "/blog"
+  match "/blog/omg" => "omg#index"
+end
+
+# APP/app/controllers/omg_controller.rb
+class OmgController < ApplicationController
+  use SomeMiddleware
+end
+
+# ENGINE/lib/blog/engine.rb
+class Blog::Engine < Rails::Engine
+  config.use SomeMiddleware
+end
+{% endhighlight %}
+
+What will happen when you will request <code>/blog/omg</code> path? It will call the <code>Blog::Engine</code> first, as it has higher priority than <code>/blog/omg</code>. Request will pass through the Engine's middleware stack firing SomeMiddleware and hit the Engine's router. If <code>/omg</code> is not a valid route for <code>Blog::Engine</code> it will return 404 and Application's router will try next route, that is <code>/blog/omg</code> pointing to <code>OmgController</code>. Middleware stack for that controller also includes <code>SomeMiddleware</code> so it will be fired again, which is probably not something that we want.
+
+The solution is to mount apps with lower priority than other routes.
+
+h2. Generation
+
+The problem with generation is related to mount point, the place where engine is mounted. Consider such example:
+
+{% highlight ruby %}
+# APP/config/routes.rb
+MyRailsApp::Application.routes.draw do
+  match "/" => "users#index"
+
+  scope "/:user", :user => "drogus" do
+    mount Blog::Engine => "/blog"
+  end
+end
+
+# ENGINE/lib/blog/engine.rb
+class Blog::Engine < Rails::Engine
+end
+
+# ENGINE/config/routes.rb
+Blog::Engine.routes.draw do
+  resources :posts
+end
+{% endhighlight %}
+
+<code>Blog::Engine</code> is mounted at <code>"/:user/blog"</code> (let's just suppose that blog implements multi user setup) and it provides <code>posts</code> resources. As you can remember from recognition part, <code>/:user/blog</code> part is engine's prefix. Additionally, default user is set to "drogus", so when :user is not specified it will be set to drogus. Imagine that you need to generate path to posts. Something that you would normally achieve by calling <code>posts_path</code> method. With more than one router the situation is not so simple. We can't simply use named url helpers (like <code>posts_path</code>) inapplication's controllers, so we need some other way to handle that (if you're wondering why can't we just use <code>posts_path</code>, it's explained in named routes section of this post).
+
+First problem connected with that is API. Jeremy Kemper came up with helper that will allow using mounted engine's url helpers by simply calling <code>some_engine.posts_path</code>. The name of that helper is taken from Engine's name or from <code>:as</code> option used in mount method. Because <code>:as</code> option is not provided in my example, helper's name will be <code>blog_engine</code> (based on <code>Blog::Engine</code>). Using that helper we can generate paths for Engine:
+
+{% highlight ruby %}
+blog_engine.posts_path
+blog_engine.url_for @post
+blog_engine.polymorphic_path @post
+blog_engine.url_for :controller => "posts", :action => "index"
+{% endhighlight %}
+
+We can also generate application's urls with <code>app</code> helper:
+
+{% highlight ruby %}
+app.root_url
+{% endhighlight %}
+
+The next problem to solve is behavior of such helpers. At first, it seems that it's fairly easy, but in reality there is quite a few cases to handle. The thing that is most important while considering url generation is context. We can generate urls in application's controllers, engine's controller's, ActionMailer or regular classes not related to Rails itself. Let's go through each case.
+
+h4. Generating engine's url inside application's controller
+
+{% highlight ruby %}
+# APP/app/controllers/foo_controller.rb
+class FooController < ApplicationController
+  def index
+    blog_engine.posts_path #=> "/drogus/blog/posts"
+  end
+end
+{% endhighlight %}
+
+Generating posts path inside one of application controllers (and consequently views and helpers) should generate prefix according to mount point. In that particular situation, default user will be inserted in place of :user, so the url will be <code>"/drogus/blog/posts"</code>. You could also do <code> blog_engine.posts_path(:user => "john")</code>, which would generate <code>"/john/blog/posts"</code>.
+
+h4. Generating engine's url inside engine's controller
+
+{% highlight ruby %}
+# ENGINE/app/controllers/posts_controller.rb
+class PostsController < ActionController::Base
+  include Blog::Engine.routes.url_helpers
+
+  def index
+    posts_path #=> ??
+  end
+end
+{% endhighlight %}
+
+This situation is a bit different. The first thing you will probably notice is that I used posts_path instead of blog_engine.posts_path. This is possible because I included url_helpers from engine's routes. From various reasons it can't be included automagically for engine's controllers, but the plan is to make it work without any explicit includes. Why can't we just use <code>blog_engine.posts_path</code>? In that example it would work, but note that engine can be mounted with different <code>:as</code> option. With mount looking like:
+
+{% highlight ruby %}
+mount Blog::Engine => "/blog", :as => "blog"
+{% endhighlight %}
+
+you would have to use <code>blog.posts_path</code> instead of <code>blog_engine.posts_path</code>. Basically engine should not need to know how it's mounted. That said, we don't have any information about options used to mount it, all that we know is what's the request that was used to reach the engine.
+
+But what about the generated path? Someone could say that it should also generate prefix, but that would not work as expected. Imagine that someone requested one of your users blog with path <code>"/dhh/blog/posts/1"</code>. When you click on link with url generated by <code>posts_path</code>, you should stay in the same scope, so url should depend on you current path. This is achieved by using <code>env["SCRIPT_NAME"]</code> value. In request to <code>"/dhh/blog/posts/1"</code>, the script name would be set to <code>"/dhh/blog"</code>, as this is the part of path that does not belong to engine. It should be clear now, that example above will generate <code>"/dhh/blog/posts"</code> path for such request.
+
+The next thing that is worth mentioning is <code>_routes</code> method. When you call posts_path directly, it must use routes object. This object is available through <code>_routes</code> method. This method is defined when you include <code>url_helpers</code>, so it points to application's routes by default. When <code>Blog::Engine.routes.url_helpers</code> are included in PostsController, <code>_routes</code> is changed to use engine's routes, and because of that we can use posts_path safely.
+
+h4. Generating application's url inside engine's controller
+
+{% highlight ruby %}
+# ENGINE/app/controllers/posts_controller.rb
+class PostsController < ActionController::Base
+  def index
+    app.root_path
+  end
+end
+{% endhighlight %}
+
+We would like to generate root_path from our application's router. Obviously it should generate <code>"/"</code> path, without Engine's prefix. The only exception is situation when app is hosted in a sub path (eg /myapp). This can be done with Phusion Passenger, using RailsBaseURI option. <code>/myapp</code> part would be passed as <code>SCRIPT_NAME</code> in such case. Nothing complicated, we already know how to use <code>SCRIPT_NAME</code>, right? Not really (wouldn't it be to simple? ;-). The problem is, <code>SCRIPT_NAME</code> is kept as a string. Let's see how the request to <code>"/myapp/user/blog/posts"</code> looks like.
+
+At first it hits the application. <code>SCRIPT_NAME</code> is set to <code>/myapp</code> by Passenger and the path is <code>/user/blog/posts</code>. Now, application's router recognizes that this request should get to engine, so <code>Blog::Engine</code> is called. As engine needs only <code>/posts</code> as path, the prefix (<code>/user/blog</code>) will be attached to <code>env["SCRIPT_NAME"]</code> resulting in <code>/myapp/user/blog</code>. As this is one string and we need to get just application's script name, solution is not obvious. How do we get the original script name? Right now our approach is to use whatever is set in <code>Rails.application.routes.default_url_options[:script_name]</code>, so it should be set to "/myapp" in that case.
+
+h4. Generating engine's url in any other class (including ActionMailer)
+
+In that case, url should be generated with prefix (which would be <code>/user/blog</code> in my example). In ActionMailer we are not inside request, so <code>script_name</code> is not available and with that in mind we need to generate the full path with <code>"/user/blog/"</code> at the beginning.
+
+h4. Solution
+
+Although it may look complicated to handle all those use cases, solution is relatively easy. The first thing to do is to assume that prefix should be always generated. This gets all cases with prefix out of our way. What's not so obvious, it also makes generating application's url in engine work. As application's routes are not mounted, prefix is nil, so we can safely add it to "generate prefix" case. What's left? Generating engine's url inside engine. We need to use <code>env["SCRIPT_NAME"]</code> here. How to check if we should attach script name? We need to check if routes used to generate url are the same as routes connected with current request.
+
+Right now, to make it possible, router object is passed via <code>env["action_dispatch.routes"]</code>. When application is called, it sets it to <code>Rails.application.routes</code> and then when engine is called, it sets its own router there. That way, we always now in which controller are we. If <code>_routes</code> method points to the same routes as the <code>env["action_dispatch.routes"]</code> it means that we try to generate engine's url inside engine and we should use the <code>SCRIPT_NAME</code>.
+
+h2. Named routes
+
+The initial idea was to allow using named routes from 2 routers in one scope, just like that:
+
+{% highlight ruby %}
+# APP/app/controllers/foo_controller.rb
+class FooController < ActionController::Base
+  # Rails.application.routes_url_helpers are included by default
+  include Blog::Engine.routes.url_helpers
+
+  def index
+    posts_path #=> "/blog/posts" - path from engine's router
+    root_path #=> "/" - path from application's router
+  end
+end
+{% endhighlight %}
+
+Although it would be handy if you will have to use paths from mounted engine a lot, it is the cause of many issues:
+
+* named route method must know the router that it was generated by, as now we could have multiple routers
+* there is a collision problem if 2 routers have the same helpers (situations when both routers will have for example posts_path is not so common, but problem will exist for root_path for sure)
+* currently, after including url_helpers twice <code>_routes</code> method will point to second routes (<code>Blog::Engine.routes</code> in last example), which will cause problems with using url helpers directly
+
+There are some solutions for all of those problems, but as they're all a bit hacky and complicated, we decided to leave that topic and not allow to use helpers from 2 routers in one scope. It means that you will have to explicitly say that you want to use router other then the default one (for example by using <code>blog_engine.posts_path</code> helper). It also means that including url_helpers from engine will overwrite current routes, so in case above, you can't directly use application routes any more. In such case you should use <code>app</code> helper.
+
+I hope that this post is good introduction to current status of router usage in mountable apps. As usual: if you have any ideas, feature requests, critique or any other thoughts that could help bringing mountable apps to life, you're more than welcome ;-)
+
