@@ -18,6 +18,8 @@ bq. Registers filename to be loaded (using Kernel::require) the first time that 
 
 The great thing in autoload is its laziness. It will not load given file, if module is not accessed. How does Rails use autoload in Railtie? It autoloads Configurable and Configuration modules. As Railtie doesn't need configuration on its own, it includes it in classes that inherit from Railtie ("code":http://github.com/rails/rails/blob/v3.0.0.beta4/railties/lib/rails/railtie.rb#L170). That way, those 2 files will not be loaded unless Railtie subclass is created. Someone could argue that Railtie will not be probably used alone, without any subclasses, as Railtie is much more like abstract class, but it's really good pattern and it's consistently used across other classes in Rails.
 
++I need to rectify one thing. Although autoload is very nice, it's also known to be thread unsafe and according to Carl Lerche it will be removed from Rails. Use with consideration ;-) +
+
 Getting back to Rails itself. The next class in hierarchy is "Engine":http://edgeapi.rubyonrails.org/classes/Rails/Engine.html. Engine is much closer to full stack Rails app. In fact application is a bit more specialized Engine. That makes sharing an application as easy as converting it to engine. So, what's Engine? Basically it's Railtie with ability to set load paths for views, controllers, helpers, locales etc. That's it? Nothing more? That simple? Yep, that's right.
 
 Now it's time for Application. Application is a subclass of Engine and it's capable of booting the Rails app. As you can "read in the docs":http://edgeapi.rubyonrails.org/classes/Rails/Application.html, Application is singletone and that's why 2 Rails apps can't be run in a single process. So what does exactly Rails application do?
