@@ -6,6 +6,8 @@ categories: ['en']
 
 In my last post I briefly described some of the RSoC changes and plans. One of the things that I left is router. The topic is much harder and I think it deserves separate blog post.
 
+Basically, the problem with engines and routes is that now you can have more than one router. That leads to many issues that need to be solved. As with my last post, things described here are not in Rails core yet, so you will have to wait a bit to actually use it.
+
 For the good start, let's identify things to consider:
 
 * recognition
