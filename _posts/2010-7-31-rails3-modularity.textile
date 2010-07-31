@@ -1,0 +1,119 @@
+--- 
+title: "Rails3 modularity"
+layout: post
+categories: ['en']
+---
+
+Since I spend a lot more time with Rails 3 codebase, I am more and more amazed by its modularity. Rails 3 is much more extensible than I would have ever thought. As a part of my rubysoc project I wanted to port merb-parts to Rails 3. Some of you may never heard of merb parts and ask what the hell are parts? Do I need it? Parts are a bit like controllers, but much more lightweight and without overhead of handling requests. I like to think about parts as powerful partials. If you have a partial and you would like to add a bit more logic to it or fetch something from database, you could probably benefit from using parts. Let's go with a simple example:
+
+{% highlight ruby %}
+# app/parts/articles_part.rb
+class ArticlesPart < Parts::Base
+  def index
+    @articles = Article.limit(params[:limit] || 10).order("created_at DESC")
+  end
+end
+{% endhighlight %}
+
+{% highlight erb %}
+# app/parts/views/articles_part/index.html.erb
+<ul>
+  <% @articles.each do |article| %>
+    <li><%= article.title %></li>
+  <% end %>
+</ul>
+{% endhighlight %}
+
+This simple part will fetch last <code>params[:limit]</code> articles or 10 if limit is not provided. Let's use it in our view:
+
+{% highlight erb %}
+  <%= part(ArticlesPart => :index, :limit => 5) %>
+{% endhighlight %}
+
+Such call will render list of last 5 articles.
+
+The question is: how much lines of code does it take to implement something like that with ability to render views, layouts, <code>:inline</code>, use helpers, filters and much more? Over 100 lines of code including <code>part()</code> helper and a railtie (railtie is used to plug it into rails) - if you don't believe me grab the "repo":http://github.com/drogus/rails-parts and check it yourself.
+
+How is it possible? Let's look at the implementation of <code>Parts::Base</code>:
+
+{% highlight ruby %}
+require 'parts/default_layout'
+
+module Parts
+  class Base < AbstractController::Base
+    attr_reader :params
+
+    include AbstractController::Layouts
+    include AbstractController::Translation
+    include ActionController::Helpers
+    include AbstractController::Rendering
+    include ActionController::ImplicitRender
+    include DefaultLayout
+    include AbstractController::Callbacks
+
+    def initialize(controller, params)
+      @params = controller.params.dup
+      @params.merge!(params) unless params.empty?
+      self.formats = controller.formats
+    end
+
+    def self.inherited(klass)
+      super
+      klass.helper :all
+    end
+  end
+end
+{% endhighlight %}
+
+That's all... ? Yes!
+
+As you cans see <code>Parts::Base</code> inherits from <code>AbstractController::Base</code>, which gives it really basic functionality. Additionaly a few helpers are included to add a bit more behavior. The only mixin that I needed to create myself is <code>Parts::DefaultLayouts</code> which ensures that layout with the name of the part is rendered by default, unless <code>:layout => false</code> or there is no such layout in layouts directory.
+
+Ok, that all is nice and dandy, but how does it work internally?
+
+The implementation of such pattern can be demonstrated with such code:
+
+{% highlight ruby %}
+class Foo
+  def foo
+    puts 'foo'
+  end
+end
+
+module Bar
+  def foo
+    puts 'bar'
+    super
+  end
+end
+
+module Baz
+  def foo
+    puts 'baz'
+    super
+  end
+end
+
+class Omg < Foo
+  include Bar
+  include Baz
+
+  def foo
+    puts 'omg'
+    super
+  end
+end
+
+Omg.new.foo #=> omg
+            #   baz
+            #   bar
+            #   foo
+{% endhighlight %}
+
+There are 2 modules (Bar and Baz) and 2 classes (Foo and Omg) implementing foo method here. Omg class inherits from Foo and additionaly modules Bar and Baz are included in Omg. This code takes advantage of ruby object model. How does it work?
+
+When you instantinate Omg object with <code>Omg.new</code> and call method foo on it, it looks for foo method in current class and its superclasses. So first method that will be actually called is Omg#foo. This method is calling super, so ruby will look for method foo also in Omg's superclass. At first you could think that it's Foo, but internally Ruby treats modules as superclasses. That said, the next superclass will be the last included module, which is Baz. After that Bar's and Foo's methods will be invoked.
+
+This one of the best patterns I have seen in Ruby so far. Not only it allows to extend objects easily, but also to reuse small chunks of code making the whole thing more modular. If Rails would stop at standard inheritance that we know from Java and other similar OO languages, creating something like parts would be much harder. In <code>Parts::Base</code> I used a few modules from AbstractController, but also a module from ActionController. With implementation without mixins, I would need to take all or nothing approach.
+
+If you're a Ruby developer, please think about that pattern while writing your next library. It can really help to make your code easier to extend and reuse. I was amazed how easy it was to implement all that stuff and I love the way that Rails is going!
