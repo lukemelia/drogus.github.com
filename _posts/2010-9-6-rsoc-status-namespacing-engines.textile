@@ -1,0 +1,82 @@
+--- 
+title: 'RSoC status: Namespacing engines'
+layout: post
+categories: ['en']
+---
+
+It's been a while since my last post. After finalizing my work on routes and few other things I went to Croatia for 2 weeks, to rest from the computer and programming. But fear not, I will not count that 2 weeks into RSoC time and I will work for 2 weeks longer to not shorten actual development time.
+
+The big news is: my work has been merged to rails official repository recently! That means that you can start using the things that I described right away (you just need to use edge version of rails).
+
+The next thing that needed to be done to allow mounting engines easily is namespacing. Namespacing is crucial to avoid conflicts between engines and application itself. Imagine that you have application with Article and Comment models and you want to mount blog engine into it. The chances are, blog engine will also have Comment model and corresponding controller and helper. Without namespacing such configuration would end up with conflicts. To avoid that, we can put all of the things in an engine into namespace:
+
+{% highlight ruby %}
+# ENGINE/app/models/blog/comment.rb
+module Blog
+  class Comment < ActiveRecord::Base
+  end
+end
+
+# ENGINE/app/controllers/blog/comments_controller.rb
+module Blog
+  # note that ApplicationController here is in fact Blog::ApplicationController
+  class CommentsController < ApplicationController
+  end
+end
+{% endhighlight %}
+
+At first, it may seem that this will not require any changes to Rails, it's standard Ruby technique, right? To some degree it's true, but there are some places that made it hard to use namespaced engines before.
+
+Let's look at controllers as an example. In rails 3.0, when you create any class that inherits from <code>ActionController::Base</code>, it will get all of the application helpers. It's default behavior and it's perfectly ok when you have only one application. Problems appear when you want to mount engine with its own controllers and helpers. With Rails 3.0 it will be a bit hard. Even if you namespace your controllers and helpers, you will get all application's helpers instead of engine's ones. The simple solution would be to load only helpers within current namespace, but that would break some of the existing engines.
+
+There are basically 2 types of engines. Some of the engines are considered to be a part of application, they provide helpers and controllers that will be used within application and there is no need to isolate them (take "Devise":http://github.com/plataformatec/devise as example of such engine). I will call it "shared engine". The second use case is engine that should not share anything, like blog engine. I will call such constructs "isolated engines".
+
+The problem with having shared and isolated engines is the fact that in both situations you can namespace stuff inside, but the behavior should be slightly different. While you would probably like to share helpers from shared engine, even if they're namespaced, you would not want that in case of isolated engine. To distinguish this situations you need to explicitly say that engine is isolated. Otherwise it will be shared. To make engine isolated, just use <code>namespace()</code> method in Engine definition:
+
+{% highlight ruby %}
+module Blog
+  class Engine < Rails::Engine
+    namespace(Blog)
+  end
+end
+{% endhighlight %}
+
+With such code, all of the stuff namespaced with <code>Blog</code> will be isolated. There are quite a few effects of that. As I mentioned before, one of the problems are controllers. With engine explicitly marked as namesapaced, controllers will include only helpers from within the same namespace and they will include only an engine's routes.
+
+The next thing is router itself. When you have every controller inside the module, normally you would have to reflect that in routes:
+
+{% highlight ruby %}
+class Blog::Engine.routes.draw do
+  scope(:module => :blog) do
+    resources :posts
+  end
+end
+{% endhighlight %}
+
+This code will ensure that <code>posts</code> resource points to <code>Blog::PostsController</code>. With isolated engine this is not needed at all. You can ommit that scope, cause it will be applied automagically behind the scene. With engine marked as isolated you can just do:
+
+{% highlight ruby %}
+class Blog::Engine.routes.draw do
+  # everything here is namespaced with :blog namespace
+  resources :posts
+end
+{% endhighlight %}
+
+The next thing to change was <code>ActiveModel::Naming</code>. It is used in many places in rails and by default it leaves namespace, e.g. it would convert <code>Blog::Post</code> to <code>blog_post</code>. While in some places it's ok, it can be a major PITA in other ones. The first pain point is <code>polymorphic_url</code>, which is used among the other things in <code>form_for</code>. Let's consider example of <code>Blog::Post</code> model:
+
+{% highlight ruby %}
+# @post = Blog::Post.new
+
+<%= form_for(@post) do |f|%>
+  <%= f.text_field :title %>
+  <%= f.submit %>
+<% end %>
+{% endhighlight %}
+
+Without any changes in <code>ActiveModel::Naming</code>, such code would try to use <code>blog_posts_path</code> helper. Using namespace here is not needed at all, as you can't have a conflict with helpers from other routers. That's why in isolated engine <code>form_for(@post)</code> will use <code>posts_path</code> and thanks to that, we didn't need to add that suffix to all the routes.
+
+The next thing connected with forms and model name are param names. Normally, the last piece of code would generate field <code><input type="text" name="blog_post[title]" id="blog_post_title" /></code>. That kind of suffixes are also not needed as it's highly improbable that you would need <code>params[:post]</code> for some other thing (and even if it is the case for you, you can use <code>:as => :some_other_name</code> to change the default). The <code>blog_</code> is also omitted here and in isolated engine the field would look just like that: <code><input type="text" name="post[title]" id="post_title"/></code>.
+
+All of the other places where <code>ActiveModel::Naming</code> is used, like partials, generating dom elements or i18n, take the namespace into account.
+
+As you can see, there was quite a few changes in Rails code to handle namespaces, but in the end they're pretty transparent to for the developer.
