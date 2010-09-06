@@ -73,9 +73,9 @@ The next thing to change was <code>ActiveModel::Naming</code>. It is used in man
 <% end %>
 {% endhighlight %}
 
-Without any changes in <code>ActiveModel::Naming</code>, such code would try to use <code>blog_posts_path</code> helper. Using namespace here is not needed at all, as you can't have a conflict with helpers from other routers. That's why in isolated engine <code>form_for(@post)</code> will use <code>posts_path</code> and thanks to that, we didn't need to add that suffix to all the routes.
+Without any changes in <code>ActiveModel::Naming</code>, such code would try to use <code>blog_posts_path</code> helper. Using namespace here is not needed at all, as you can't have a conflict with helpers from other routers. That's why in isolated engine <code>form_for(@post)</code> will use <code>posts_path</code> and thanks to that, we didn't need to add that prefix to all the routes.
 
-The next thing connected with forms and model name are param names. Normally, the last piece of code would generate field <code><input type="text" name="blog_post[title]" id="blog_post_title" /></code>. That kind of suffixes are also not needed as it's highly improbable that you would need <code>params[:post]</code> for some other thing (and even if it is the case for you, you can use <code>:as => :some_other_name</code> to change the default). The <code>blog_</code> is also omitted here and in isolated engine the field would look just like that: <code><input type="text" name="post[title]" id="post_title"/></code>.
+The next thing connected with forms and model name are param names. Normally, the last piece of code would generate field <code><input type="text" name="blog_post[title]" id="blog_post_title" /></code>. That kind of prefixes are also not needed as it's highly improbable that you would need <code>params[:post]</code> for some other thing (and even if it is the case for you, you can use <code>:as => :some_other_name</code> to change the default). The <code>blog_</code> is also omitted here and in isolated engine the field would look just like that: <code><input type="text" name="post[title]" id="post_title"/></code>.
 
 All of the other places where <code>ActiveModel::Naming</code> is used, like partials, generating dom elements or i18n, take the namespace into account.
 
