@@ -46,7 +46,7 @@ With such code, all of the stuff namespaced with <code>Blog</code> will be isola
 The next thing is router itself. When you have every controller inside the module, normally you would have to reflect that in routes:
 
 {% highlight ruby %}
-class Blog::Engine.routes.draw do
+Blog::Engine.routes.draw do
   scope(:module => :blog) do
     resources :posts
   end
@@ -56,7 +56,7 @@ end
 This code will ensure that <code>posts</code> resource points to <code>Blog::PostsController</code>. With isolated engine this is not needed at all. You can ommit that scope, cause it will be applied automagically behind the scene. With engine marked as isolated you can just do:
 
 {% highlight ruby %}
-class Blog::Engine.routes.draw do
+Blog::Engine.routes.draw do
   # everything here is namespaced with :blog namespace
   resources :posts
 end
