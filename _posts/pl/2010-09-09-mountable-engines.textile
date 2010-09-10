@@ -1,0 +1,341 @@
+--- 
+title: "Mountable engines"
+layout: post
+categories: ['pl']
+---
+
+Jak prawdopodobnie niektórzy wiedzą, podczas wakacji pracowałem nad projektem "Rails mountable apps" w ramach "Ruby Summer of Code":http://rubysoc.org. Projekt zakładał umożliwienie montowania aplikacji napisanych w Railsach w innych aplikacjach Railsowych. W tym momencie nie jest to jeszcze niestety możliwe, ale istnieją już solidne podwaliny w postaci "mountable engines". Wspólnie z osobami z rails core team zdecydowaliśmy, że najlepiej będzie na razie przetestować w boju montowalne engine'y i zobaczyć w jaki sposób programiści ich używają, a później popracować na montowalnymi aplikacjami.
+
+Czym są montowalne engine'y? Po co właściwie przez większą część wakacji siedziałem przy kodzie railsów skoro engine'y już istnieją w railsach 2.x i stosunkowo łatwo można napisać plugin z kontrolerami, modelami i widokami? Implementacja engine'ów w railsach 2.x ma kilka sporych wad. Pierwszą z nich jest zarządzanie routesami. Użytkownik nie ma żadnego wyboru w kwestii tego pod jakim urlem engine będzie się znajdował. Jeżeli twórca engine'u użyje routesów, to jedynym prostym sposobem na zmianę zachowania jest sforkowanie i ręczna zmiana kodu. Następnym problemem jest enkapsulacja. Kontrolery w obecnej wersji engine'ów zachowują się tak, jakby po prostu przekopiować je ręcznie do aplikacji. Oznacza to, że każdy kontroler dostaje automatycznie wszystkie helpery z aplikacji. W niektórych przypadkach może to być pożądane zachowanie, ale przy użyciu engine'ów napisanych przez innych, wiąże się to z ryzykiem kolizji nazw. Kolejne ograniczenie to rack middlewares. Nie można w prosty sposób dodać middleware'ów, które będą podpięte tylko do engine'u. Jedyny sposób to ręczne sprawdzanie ścieżki (np. <code>env["PATH_INFO"] =~ /^\/tolk/</code>, niezbyt wygodne). W railsach 3.0 można co prawda używać aplikacji racka w kontrolerach, ale jest to dość ograniczone, tzn. wpinamy się już po przejściu przez router i cały middleware stack. Ostatnią rzeczą, o której chciałbym wspomnieć, jest wygoda. Ze względu na konflikty nazw, najbezpieczniej jest umieścić wszystkie modele, kontrolery i helpery w module. Pociąga to za sobą jednak kilka niedogodności. Np. w tym momencie wszystkie helpery generujące urle trzeba prefixować, np. <code>blog_posts_path</code>. Tak samo jest z modelami, domyślna nazwa wygenerowana przez <code>ActiveModel::Naming</code>, to <code>blog_post</code> dla klasy <code>Blog::Post</code>.
+
+Podczas pracy w RSoC próbowałem poprawić te problemy. W efekcie zaszło dość dużo zmian w zachowaniu engine'ów:
+
+* engine jest teraz aplikacją rack
+* posiada własny middleware stack
+* posiada własne routesy
+* pliki z katalogu public mogą być serwowane z użyciem <code>ActionDispatch::Static</code>
+* może posiadać swoje własne pluginy
+* w prosty sposób można umieścić modele i kontrolery w module
+
+h2. Co się zmieniło?
+
+h3. Izolowany lub współdzielony engine
+
+Do tej pory pliki z katalogu 'app', znajdującego się w katalogu z engine'em, zachowywały się mniej więcej tak, jakby wkleić je do katalogu app w aplikacji. Skutek tego był taki, że dostawały wszystkie helpery (w tym także helpery do routesów) z aplikacji. Dla niektórych engine'ów jest to pożądane zachowanie (np. Devise), ale istnieje wiele przypadków, w których nie działa to zbyt dobrze. W przypadku użycia jakiegoś dużego engine'u, takiego jak np. forum, istnieje duża szansa wystąpienia konfliktów (np. takie same nazwy metod w helperach). Dlatego od railsów 3.1 wprowadzona zostanie możliwość oznaczenia, że Engine jest izolowany używając metody namespace:
+
+{% highlight ruby %}
+module Blog
+  class Engine < ::Rails::Engine
+    namespace Blog
+  end
+end
+{% endhighlight %}
+
+Przy takiej konfiguracji kontrolery znajdujące się w module Blog, dostaną tylko i wyłącznie helpery i routesy znajdujące się w tym samym namespace.
+
+h3. Montowanie engine'u
+
+Engine można zamontować w aplikacji tak jak każdą aplikację Rack, używając metody mount:
+
+{% highlight ruby %}
+mount Blog::Engine => "/blog", :as => "blog"
+{% endhighlight %}
+
+Przy takiej definicji engine będzie dostępny w <code>/blog</code>.
+
+h3. Routes
+
+Z powodu tego, że Engine może teraz posiadać swoje własne routes'y, czasami zajdzie potrzeba odwołania się do routesów engine'u z aplikacji i na odwrót. Dlatego stworzone zostały helpery, ktore to umożliwiają. Helper <code>main_app</code> służy do odwołania się do routesów aplikacji, a helpery dla zamontowanych engine'ów zależą od opcji <code>:as</code> użytej w powyższym przykładzie. Np. dla powyższego przykładu, helper do engine'u <code>Blog::Engine</code> będzie nazywał się <code>blog</code>. Dzięki temu można napisać np.:
+
+{% highlight ruby %}
+blog.posts_path
+blog.root_path
+
+main_app.login_path
+{% endhighlight %}
+
+Oczywiście takie helpery muszą być użyte tylko przy odwoływaniu się do innych routesów, np. kiedy chcemy wygenerować ścieżkę do routesów bloga z kontrolera aplikacji.
+
+h3. Namespacing
+
+Żeby uniknąć konfliktów, montowalny engine musi być zamknięty w namespace. W normalnych warunkach skutkuje to tym, że wszędzie trzeba dodawać prefix (np. nazwa dla modelu <code>Blog::Post</code>, to w normalnych warunkach <code>blog_post</code>, route to <code>blog_posts_path</code> itp.
+
+Tego typu prefixy w zwykłym enginie są używane w celu uniknięcia konfliktów. W izolowanym enginie najczęściej nie ma takiego problemu. Np. nie opłaca się w środku engine'u pisać <code>blog_posts_path</code> zamiast <code>posts_path</code>. Tak samo podczas wysyłania parametrów z formularza, nie opłaca się używać <code>params[:blog_post]</code> zamiast <code>params[:post]</code>. Engine oznaczony jako izolowany pozwala na ominięcie tych prefixów w większości miejsc.
+
+h3. Migracje
+
+Jeżeli używacie w swojej aplikacji ActiveRecorda, to przydadzą się też migracje. Obecne podejście do migracji engine'ów, to kopiowanie migracji do katalogu aplikacji z przepisaniem timestampów. Dla przykładu mamy w enginie <code>Blog::Engine</code> migrację <code>20091212_create_posts.rb</code>. Po wykonaniu w dniu 2010-10-10 komendy:
+
+{% highlight bash %}
+rake railties:copy_migrations
+{% endhighlight %}
+
+zostanie ona przekopiowana do katalogu aplikacji z nazwą <code>20101010_create_posts.blog.rb</code>. Wybraliśmy ten sposób z kilku powodów:
+
+* przed wykonaniem migracji warto na nią spojrzeć, co po przekopiowaniu do katalogu aplikacji jest dużo łatwiejsze
+* tego typu format jest zgodny z dotychczasowym, więc nie trzeba było zmieniać tabeli <code>schema_migrations</code>
+* dzięki przepisywaniu timestampów nie wystąpi sytuacja, w której po przekopiowaniu migracji, będą one wykonywane przed migracjami aplikacji (ma to znaczenie kiedy w czasie rozwijania aplikacji dodamy jakieś pole do tabeli z engine'u)
+
+h3. Pliki statyczne
+
+Ostatni problem jaki trzeba było rozwiązać, to serwowanie statycznych plików. Są na to obecnie 2 sposoby:
+
+* utworzenie symlinków do katalogów public w enginach, służy do tego task <code>rake railties:create_symlinks</code>
+* wykorzystanie <code>ActionDispatch::Static</code> (middleware, który serwuje pliki statyczne)
+
+h2. Tutorial
+
+Najłatwiej pokazać wszystkie zmiany w praktyce, więc pokuszę się o napisanie prostego engine'u. Do wygenerowania tego engine'u użyjemy "enginex":http://github.com/josevalim/enginex napisanego przez José Valima. Niech nie zmyli was nazwa. Enginex został co prawda stworzony w celu prostego generowania engine'ów, ale z powodzeniem można go używać do wygenerowania szkieletu dla dowolnego gema, który będzie miał za zadanie działać z railsami 3. Na początek zainsalujmy enginex:
+
+{% highlight bash %}
+gem install enginex
+{% endhighlight %}
+
+Po wykonaniu komendy <code>enginex --help</code> pokażą się dostępne opcje. W chwili obecnej można ustawić jedynie test framework (rspec lub test unit). Zacznijmy z domyślnym test unit:
+
+{% highlight bash %}
+enginex blog
+{% endhighlight %}
+
+Enginex powinien stworzyć w tym momencie katalog blog, w którym będą znajdować się pliki z reguły pojawiające się w gemach (lib, test, README itp) oraz coś nowego - aplikacja railsów w katalogu <code>test/dummy</code>. Po co nam aplikacja railsów? Ze względu na to, że engine (czy też inny rodzaj gemu) będzie pracował z railsami i najłatwiej testować go w realnym środowisku railsów.
+
+Pierwsze co trzeba będzie zmienić, to plik Gemfile. Obecna wersja enginex zakłada, że użyte będą railsy 3.0. Całkiem słuszne założenie dla większości projektów, ale żeby korzystać z dobrodziejstw najnowszej wersji engine'ów, trzeba będzie użyć wersji z githuba. Co więcej, trzeba będzie użyć wersji z mojego forka railsów na githubie. Co prawda większość rzeczy, nad którymi pracowałem, jest już w oficjalnym repozytorium railsów, ale cały czas poprawiam różne rzeczy i ze względu na to, że nie mam możliwości commitowania, trzeba czasami poczekać trochę na akceptację i dorzucenie do oficjalnej wersji.
+
+Dlatego zmieniam Gemfile, żeby wyglądało w ten sposób (przy okazji dorzuciłem też <code>factory_girl_rails</code>, przyda się później):
+
+{% highlight ruby %}
+source "http://rubygems.org"
+
+gem "rails", :git => "git://github.com/drogus/rails.git", :branch => "engines"
+gem "arel", :git => "git://github.com/rails/arel.git"
+
+gem "factory_girl"
+gem "capybara", ">= 0.3.9"
+gem "sqlite3-ruby", :require => "sqlite3"
+
+if RUBY_VERSION < '1.9'
+  gem "ruby-debug", ">= 0.10.3"
+end
+{% endhighlight %}
+
+Teraz tylko <code>bundle install</code> w konsoli i można zacząć pracować. Dla pewności, że środowisko się poprawnie wczytuje, można jeszcze odpalić testy: <code>rake test</code>
+
+Jeżeli testy przechodzą, to można się zabrać za pisanie kodu. Od czego zacząć? Od testów oczywiście ;-) Po przejrzeniu katalogu test, łatwo zauważyć, że znajduje się tam katalog integration. Wygenerowane przez enginex testy korzystają z Capybary, dzięki czemu można łatwo pisać testy integracyjne. Zacznijmy od wyświetlania postów na blogu. Stwórzmy plik <code>test/integration/posts_integration_test.rb</code>:
+
+{% highlight ruby %}
+require 'test_helper'
+
+class PostsIntegrationTest < ActiveSupport::IntegrationCase
+  test "I can see blog posts on blog's root page" do
+    Factory.create(:post, :title => "Awesome!", :body => "All work and no fun makes Jack a dull boy")
+
+    visit blog.root_path
+    assert page.has_content?("Awesome!")
+    assert page.has_content?("All work and no fun makes Jack a dull boy")
+  end
+end
+{% endhighlight %}
+
+Po uruhomieniu rake test zobaczymy: <code>ArgumentError: No such factory: post</code>. Brakuje nam wpisu post w factories. Dodajmy go więc:
+
+{% highlight ruby %}
+# test/factories.rb
+
+Factory.define :post, :class => "Blog::Post" do |f|
+  f.title "My post"
+  f.body "It's just a post, man..."
+end
+{% endhighlight %}
+
+Do pliku <code>test/test_helper.rb</code> dodajemy również <code>require "factories"</code>.
+
+Tym razem po uruchomieniu testów, błąd powinien wyglądać mniej więcej tak: <code>NameError: uninitialized constant Blog::Post</code>. Nic dziwnego, nie ma jeszcze w kodzie żadnego modelu. Model jest oczywiście namespace'owany i dlatego używamy <code>Blog::Post</code> zamiast normalnego <code>Post</code>. Nie pozostaje nic innego jak dodać taki model:
+
+{% highlight ruby %}
+# app/models/blog/post.rb
+module Blog
+  class Post < ::ActiveRecord::Base
+  end
+end
+{% endhighlight %}
+
+Musimy dodać także migrację i sprawić, żeby była uruchamiana przy każdym odpaleniu testów (między innymi przez takie problemy uważam, że mongodb, to przyszłość modularnych aplikacji ;-). Powstają tutaj dwa problemy. Pierwszym z nich są generatory. W tej chwili niestety generatory nie działają w katalogu engine'u. Drugi problem jest związany z uruchamianiem migracji, nie ma obecnie żadnego mechanizmu, który automatyzuje wykonywanie migracji dla engine'u w testach. Ale co to dla nas?
+
+Stwórzmy migrację:
+
+{% highlight ruby %}
+# db/migrate/20100631120813_create_blog_posts.rb
+class CreateBlogPosts < ActiveRecord::Migration
+  def self.up
+    create_table :blog_posts do |t|
+      t.string :title
+      t.text :body
+
+      t.timestamps
+    end
+  end
+
+  def self.down
+    drop_table :blog_posts
+  end
+end
+{% endhighlight %}
+
+Teraz wystarczy stworzyć plik <code>test_helper</code> i wkleić pod komentarzem "#Run any available migrations" poniższy kod:
+
+{% highlight ruby %}
+# Run any available migrations
+FileUtils.rm(Dir[File.expand_path("../dummy/db/test.sqlite3", __FILE__)])
+FileUtils.rm(Dir[File.expand_path("../dummy/db/migrate/*.blog.rb", __FILE__)])
+FileUtils.mkdir_p(File.expand_path("../dummy/db/migrate/", __FILE__))
+ActiveRecord::Migration.copy File.expand_path("../dummy/db/migrate/", __FILE__), { :blog => File.expand_path("../../db/migrate/", __FILE__) }
+ActiveRecord::Migrator.migrate File.expand_path("../dummy/db/migrate/", __FILE__)
+{% endhighlight %}
+
+Kod ten usuwa wszystkie wcześniej skopiowane migracje i bazę sqlite3, po czym kopiuje aktualne migracje z katalogu db/migrate i je uruchamia.
+
+Ok... Uruchamiany testy i: <code>NameError: uninitialized constant Blog::Post</code>. Pomimo tego, że model jest już stworzony, w testach dalej go nie widać. Dlaczego tak się dzieje? Nigdzie nie powiedzieliśmy, że aplikacja ma wczytać nasz Engine... a właściwie nawet nie mamy jeszcze engine'u! Po sprawdzeniu pliku <code>lib/blog.rb</code> można zauważyć, że jest tam jedynie:
+
+{% highlight ruby %}
+module Blog
+end
+{% endhighlight %}
+
+Enginex nie robi żadnych założeń co do tego jakiego rodzaju gem chcemy zrobić. Trzeba to skorygować, w pliku <code>lib/blog/engine.rb</code> wstawmy kod engine'u:
+
+{% highlight ruby %}
+module Blog
+  class Engine < ::Rails::Engine
+    namespace Blog
+  end
+end
+{% endhighlight %}
+
+a w <code>lib/blog.rb</code> załadujmy powyższy kod:
+
+{% highlight ruby %}
+require 'blog/engine'
+{% endhighlight %}
+
+Pojawia się tutaj opisywana wcześniej metoda <code>namespace</code>, która sprawia, że Engine jest izolowany.
+
+Tym razem po uruchomieniu testów dostaniemy taki błąd: <code>NameError: undefined local variable or method `blog' for #<PostsIntegrationTest:0x000001041136e0></code>. Chodzi o linijkę <code>blog.root_path</code> w teście. Brakuje nam helperow do routesów zamontowanych engine'ów. W przyszłości takie helpery będą prawdopododbnie automatycznie dołączane do testów, ale w tym momencie niestety trzeba będzie zrobić to samemu. W pliku <code>test/support/integration_case.rb</code> w ciele klasy <code>ActiveSuppoer::IntegrationCase</code> należy wkleić:
+
+{% highlight ruby %}
+include Rails.application.routes.mounted_helpers
+{% endhighlight %}
+
+W tym momencie helpery powinny już być dostępne, ale po uruchomieniu testów dalej dostaniemy ten sam błąd. Dlaczego? Jak już pisałem są to helpery do wszystkich *zamontowanych* engine'ów. A tak się składa, że <code>Blog::Engine</code> nie jest jeszcze nigdzie zamontowany. Poprawmy to montując engine w aplikacji w pliku <code>test/dummy/config/routes.rb</code>:
+
+{% highlight ruby %}
+mount Blog::Engine => "/blog", :as => "blog"
+{% endhighlight %}
+
+Po uruchomieniu testów powyższy błąd powinien zniknąć, ale za to dostajemy kolejny związany z routesami: <code>NoMethodError: undefined method `root_path' for #<ActionDispatch::Routing::RoutesProxy:0x00000101e9bd10></code>. Wynika to z faktu, że nie zdefiniowaliśmy jeszcze żadnych routesów w enginie. Aby to zrobić wystarczy wkleić taki oto kod w pliku <code>config/routes.rb</code>:
+
+{% highlight ruby %}
+Blog::Engine.routes.draw do
+  root :to => "posts#index"
+end
+{% endhighlight %}
+
+Routesy powinny już działać poprawnie, ale testy podpowiadają nam, że brakuje kontrolera: <code>ActionController::RoutingError: uninitialized constant Blog::PostsController</code>. Kontroler powinien wyglądać mniej więcej tak:
+
+{% highlight ruby %}
+module Blog
+  class PostsController < ActionController::Base
+    def index
+      @posts = Post.all
+    end
+  end
+end
+{% endhighlight %}
+
+i znajdować się w pliku <code>app/controllers/blog/posts_controller.rb</code>. Ciekawe w tym kodzie jest to, że nie musimy używać <code>Blog::Post</code>, wystarczy samo <code>Post</code>, ponieważ już jesteśmy w odpowiednim namespace. Dlatego właśnie używam dłuższej formy: <code>module Foo; class Bar; end; end</code>. Przy zastosowaniu skróconego zapisu nie dałoby się tak zrobić:
+
+{% highlight ruby %}
+class Blog::PostsController < ActionController::Base
+  def index
+    @posts = Post.all #=> ArgumentError: Blog is not missing constant Post!
+  end
+end
+{% endhighlight %}
+
+A wracając do samego engine'u... Jak pewnie niektórzy się domyślą, tym razem testy będą krzyczeć o braku template'u. Stwórzmy więc <code>app/views/blog/posts/index.html.erb</code>, a w nim wyświetlmy pobrane w kontrolerze posty:
+
+{% highlight ruby %}
+<h2>Posts</h2>
+
+<% @posts.each do |post| %>
+  <h3><%= post.title %></h3>
+  <div class="post">
+    <%= post.body %>
+  </div>
+<% end %>
+{% endhighlight %}
+
+W tym momencie testy powinny przechodzić! Aplikacja już działa, ale przydałby się jakiś layout. Do pliku <code>app/views/layouts/blog.html.erb</code> skopiujcie poniższy kod:
+
+{% highlight ruby %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Blog</title>
+</head>
+    <header>
+      <h1>Blog</h1>
+    </header>
+
+    <div id="main">
+      <%= yield %>
+    </div>
+
+    <footer>
+    </footer>
+  </div>
+</body>
+</html>
+{% endhighlight %}
+
+Teraz trzeba ten layout ustawić w kontrolerze. Z reguły robi się to w <code>ApplicationController</code> i żeby pozostać DRY, w enginie też można tak zrobić (z tą różnicą, że tutaj będzie to <code>Blog::ApplicationController</code>, który będzie wyglądał tak:
+
+{% highlight ruby %}
+module Blog
+  class ApplicationController < ActionController::Base
+    layout "blog"
+  end
+end
+end
+{% endhighlight %}
+
+Wystarczy jeszcze tylko zmienić <code>Blog::PostsController</code>, żeby dziedziczył z ApplicationController i layout powinien poprawnie się wyświetlać:
+
+{% highlight ruby %}
+class PostsController < ApplicationController
+{% endhighlight %}
+
+Ok, super, ale nie można przecież rozwijać aplikacji opierając się tylko na testach. Tutaj również możemy skorzystać z testowej aplikacji. Wejdźcie do katalogu test/dummy, wykonajcie migracje <code>rake db:migrate</code>, włączcie konsolę <code>script/rails c</code>, a w konsoli stwórzcie jakieś posty:
+
+{% highlight ruby %}
+Blog::Post.create(:title => "First post", :body => "This is awesome!")
+Blog::Post.create(:title => "Missed missy", :body => "Missy needs your help... :(")
+{% endhighlight %}
+
+Teraz można już włączyć serwer, zobaczyć jak to wygląda i dodać style. Wystarczy uruchomić serwer (<code>script/rails s</code>) i wejść na "http://localhost:3000/blog":http://localhost:3000/blog. Powinniście zobaczyć tam dodane przed chwilą posty. W layoucie <code>blog.html.erb</code> można teraz wstawić link do cssów:
+
+{% highlight erb %}
+  <%= stylesheet_link_tag "style" %>
+{% endhighlight %}
+
+a w pliku <code>public/stylesheets/style.css</code> (w katalogu engine'u, nie aplikacji) na przykład:
+
+{% highlight css %}
+header h1 {
+  color: #A80000;
+}
+{% endhighlight %}
+
+Po uruchomieniu serwera tytuł bloga powinien zmienić kolor na czerwony. Serwowanie plików statycznych działa bez wprowadzania żadnych zmian, ponieważ w trybie development domyślnie uruchamiany jest <code>ActionDispatch::Static</code>. W środowisku production, trzeba ustawić <code>config.serve_static_assets</code> na true, lub wykonać <code>rake railties:create_symlinks</code> w celu stworzenia symlinków do katalogów public w engine'ach.
+
+Na tym chciałbym zakończyć ten tutorial. W razie czego aplikację umieściłem na W kolejnych odsłonach napiszę trochę więcej o tym jak dalej obchodzić się z tego typu engine'ami. Dla podsumowania, po przeczytaniu tej notki powinniście wiedzieć jakie są różnice pomiędzy starszą wersją engine'ów, a tym co obecnie siedzi w <code>rails/master</code> oraz umieć stworzyć prosty montowalny engine.
