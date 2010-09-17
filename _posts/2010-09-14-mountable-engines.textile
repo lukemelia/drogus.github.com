@@ -1,0 +1,158 @@
+---
+title: 'Mountable engines - RSoC Wrap Up'
+layout: post
+categories: ['en']
+---
+
+As some of you probably know, during the summer I was working on "Rails mountable applications" project thanks to Ruby Summer of Code. It was great experience, I learned a lot new things and I hope that I delivered something useful for the community. I tweeted that the other day, but I must emphasize: it would not be possible without great support from my mentors: Carl Lerche, Yehuda Katz and José Valim! They helped me a lot with both ideas and implementation. The biggest internet hug should go to José, who spent enormous amount of his time on discussions, reviewing my commits and helping me to set the goals. I also want to thank all the sponsors and people that helped to organize Ruby Summer of Code.
+
+Getting back to my work. My main task was to extend capabilities of rails engines. Although at first I wanted to get straight to mountable full rails applications, after discussions with Carl and José, I knew that starting with the smaller target will be more sane way to go. The biggest problem with implementing mountable applications (that is running more than one rails application in same process) is configuration and application initialization in general. Right now config values are shared between all the railties classes, because they're kept in class variables. The other problem with mountable apps is that they're pretty new concept in rails community and we will need some time to settle standards. With those problems in mind, it is much better to test the concept with engines and implement truly mountable applications later, based on results and feedback. Right now, engines are almost as powerful as applications. The main difference is that engine can't be run without an application. The best thing about such strategy is that API for using more than one application is already here, so if it is needed, converting engine to application will be as easy as changing a bunch of configuration files.
+
+In that post, I would like to briefly describe my changes.
+
+h2. Extending engines
+
+First thing needed to allow build entire applications on engines, was to add some of the application's features to engines. That's why engines got:
+
+* its own middleware stack
+* routes
+* plugins support
+* config/environment.rb
+
+With all the capabilities that engines had before, engine is now almost as powerful as application.
+
+h2. Mounting engine
+
+Since engine is now a rack app, you can simply mount it in your application's routes:
+
+{% highlight ruby %}
+Rails.application.routes.draw do
+  mount Blog::Engine => "/blog"
+end
+{% endhighlight %}
+
+This will mount <code>Blog::Engine</code> at <code>/blog</code> path. There are 2 huge benefits of such method:
+
+* you can change the engine's path, which was much harder before
+* you can use all of the routes magic
+
+Want to mount your engine with dynamic scope? No problem:
+
+{% highlight ruby %}
+scope "/:username", :username => "default" do
+  mount Blog::Engine => "/blog"
+end
+{% endhighlight %}
+
+You can also use devise to force authentication for the engine:
+
+{% highlight ruby %}
+authenticate :admin do
+  mount Tolk::Engine => "/tolk"
+end
+{% endhighlight %}
+
+It's easy, isn't it?
+
+h2. Cross applications routes API
+
+Since you can mount engine with its own router inside application, there is a possibility of having more than one router in your app. To handle all the routers easily, there are new helpers providing access for each router. Application's router is always available as <code>main_app</code>. That said, you can call any application route from engine just like that:
+
+{% highlight ruby %}
+main_app.logout_path
+main_app.root_path
+{% endhighlight %}
+
+Helpers for other routers are available after mounting an engine:
+
+{% highlight ruby %}
+mount Blog::Engine => "/blog"
+
+# default helper for such engine is "blog":
+blog.posts_path
+blog.root_path
+{% endhighlight %}
+
+If you need to change the helper name, just pass the <code>:as</code> attribute:
+
+{% highlight ruby %}
+mount Blog::Engine => "/blog", :as => "my_blog"
+
+# now helper is called my_blog:
+my_blog.posts_path
+my_blog.root_path
+{% endhighlight %}
+
+You can also use those helpers in polymorphic url (which is used, among the other places, in <code>form_for</code>):
+
+{% highlight ruby %}
+polymorphic_url([blog, @post])
+form_for([blog, @post])
+{% endhighlight %}
+
+Note that you have to explicitly add those helpers to <code>polymorphic_url</code> only when you need to call an engine route from your application or from another engine.
+
+h2. Namespacing
+
+Having more than one source of controllers, models and helpers can cause conflicts. Imagine you have <code>Post</code> model in your application and you would like to install blog engine having model with the same name. To avoid that, you can put your engine inside the namespace. Although it will help you with conflicts, it's not enough level of separation for some engines. There are basically two possible scenarios here. One of them is shared engine, when you want to share helpers between engine and application. A good example of such engine is "Devise":http://github.com/plataformatec/devise. The other use case is when you want to make isolated engine, which will not likely share anything. It could be an engine that provides tools for application like "Tolk":http://github.com/dhh/tolk or the other app like blog or CMS.
+
+Engines are shared by default, therefore you must explicitly mark it as isolated with <code>namespace</code> method:
+
+{% highlight ruby %}
+module Blog
+  class Engine < ::Rails::Engine
+    namespace Blog
+  end
+end
+{% endhighlight %}
+
+With such engine definition, only the engine's helpers and routes will be included inside engine's controllers and views.
+
+h2. Migrations
+
+If you are one of NoSQL (or rather schema less) database users, you can probably skip that point. In other cases you will probably need migrations. We decided that the easiest way to handle engine's migrations is to copy them to application's db/migrate directory and change their timestamps for not breaking the migrations timeline. It can be done by simply calling rake task:
+
+{% highlight bash %}
+rake railties:copy_migrations
+# or to copy only selected engines
+rake railties:copy_migrations RAILTIES=foo,bar
+{% endhighlight %}
+
+The nice side effect of copying migrations is that you can easily review them before applying.
+
+h2. Assets
+
+The chances are that you will have some assets in your engine's public directory. The default way of serving assets in development mode in Rails is <code>ActionDispatch::Static</code> middleware. If you have mounted any engine, it will automagically serve their assets. In production you have 2 options:
+
+* stay with <code>ActionDispatch::Static</code> by turning it on with: <code>config.serve_static_assets = true</code> in your <code>environment.rb</code>
+* create symlinks to engine's public directories
+
+You can automatically create symlinks with a rake task:
+
+{% highlight bash %}
+rake ralties:create_symlinks
+{% endhighlight %}
+
+If you want to change the default asset path, you can set it in <code>Engine</code> definition:
+
+{% highlight ruby %}
+module Blog
+  class Engine < ::Rails::Engine
+    config.asset_path = "/my_blog_assets%s" # note %s at the end
+  end
+end
+{% endhighlight %}
+
+This will change both <code>ActionDispatch::Static</code>'s and create_symlinks rake behavior.
+
+h2. Why does it matter?
+
+Although engines are available since Rails 2.3 and even ealier as a plugin, building isolated applications using them can be hard. With new API, building entire apps (like forum, blog or CMS) that can be reused, will be much easier. But hey, big components are evil, right? I would say that it depends on your needs. There is huge space for engines as tools to help develop your application. If you use i18n, there is "Tolk":http://github.com/dhh/tolk. Most of applications could probably benefit from "Rails Admin":http://github.com/sferik/rails_admin (it's also one of the RSoC projects). Also the new Carlhuda's ;-) work on "Rails 3.1 assets":http://github.com/wycats/rails_assets is based on engines.
+
+Another topic are applications. You can argue that making flexible application that would suit needs of many developers will be hard and inefficient... and you are probably right. However there are many situations when you need to quickly add some CMS or small forum to your application and you pretty much do not care about features. It's not your core product, you just need something simple. Of course you can always do it by yourself, but what are the benefits? If you're not trying to revolutionize CMS systems and just want an easy way to add a few articles to your site, you can use something generic. If it's really needed, you can always write your own better suited engine later on and replace the previous one.
+
+h2. What's next?
+
+My work is already merged to rails master and most of the things are finished, but there are still some places that need more work. If you have any suggestions on engines, feel free to comment, add a ticket on lighthouse or send a pull request with changes.
+
+There is also need for engines creators that will battle test the new API and new concepts. If you have any questions feel free to contact me on "twitter":http://twitter.com/drogus, "github":http://github.com/drogus or <a href="mailto:drogus@gmail.com">by email</a>. I will also prepare a guide shortly, so stay tuned!
