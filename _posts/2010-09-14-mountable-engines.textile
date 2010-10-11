@@ -96,12 +96,12 @@ h2. Namespacing
 
 Having more than one source of controllers, models and helpers can cause conflicts. Imagine you have <code>Post</code> model in your application and you would like to install blog engine having model with the same name. To avoid that, you can put your engine inside the namespace. Although it will help you with conflicts, it's not enough level of separation for some engines. There are basically two possible scenarios here. One of them is shared engine, when you want to share helpers between engine and application. A good example of such engine is "Devise":http://github.com/plataformatec/devise. The other use case is when you want to make isolated engine, which will not likely share anything. It could be an engine that provides tools for application like "Tolk":http://github.com/dhh/tolk or the other app like blog or CMS.
 
-Engines are shared by default, therefore you must explicitly mark it as isolated with <code>namespace</code> method:
+Engines are shared by default, therefore you must explicitly mark it as isolated with <code>isolate_namespace</code> method:
 
 {% highlight ruby %}
 module Blog
   class Engine < ::Rails::Engine
-    namespace Blog
+    isolate_namespace Blog
   end
 end
 {% endhighlight %}

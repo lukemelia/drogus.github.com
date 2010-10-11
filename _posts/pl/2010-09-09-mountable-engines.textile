@@ -21,12 +21,12 @@ h2. Co się zmieniło?
 
 h3. Izolowany lub współdzielony engine
 
-Do tej pory pliki z katalogu 'app', znajdującego się w katalogu z engine'em, zachowywały się mniej więcej tak, jakby wkleić je do katalogu app w aplikacji. Skutek tego był taki, że dostawały wszystkie helpery (w tym także helpery do routesów) z aplikacji. Dla niektórych engine'ów jest to pożądane zachowanie (np. Devise), ale istnieje wiele przypadków, w których nie działa to zbyt dobrze. W przypadku użycia jakiegoś dużego engine'u, takiego jak np. forum, istnieje duża szansa wystąpienia konfliktów (np. takie same nazwy metod w helperach). Dlatego od railsów 3.1 wprowadzona zostanie możliwość oznaczenia, że Engine jest izolowany używając metody namespace:
+Do tej pory pliki z katalogu 'app', znajdującego się w katalogu z engine'em, zachowywały się mniej więcej tak, jakby wkleić je do katalogu app w aplikacji. Skutek tego był taki, że dostawały wszystkie helpery (w tym także helpery do routesów) z aplikacji. Dla niektórych engine'ów jest to pożądane zachowanie (np. Devise), ale istnieje wiele przypadków, w których nie działa to zbyt dobrze. W przypadku użycia jakiegoś dużego engine'u, takiego jak np. forum, istnieje duża szansa wystąpienia konfliktów (np. takie same nazwy metod w helperach). Dlatego od railsów 3.1 wprowadzona zostanie możliwość oznaczenia, że Engine jest izolowany używając metody isolate_namespace:
 
 {% highlight ruby %}
 module Blog
   class Engine < ::Rails::Engine
-    namespace Blog
+    isolate_namespace Blog
   end
 end
 {% endhighlight %}

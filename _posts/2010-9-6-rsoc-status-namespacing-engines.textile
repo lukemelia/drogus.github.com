@@ -31,12 +31,12 @@ Let's look at controllers as an example. In rails 3.0, when you create any class
 
 There are basically 2 types of engines. Some of the engines are considered to be a part of application, they provide helpers and controllers that will be used within application and there is no need to isolate them (take "Devise":http://github.com/plataformatec/devise as example of such engine). I will call it "shared engine". The second use case is engine that should not share anything, like blog engine. I will call such constructs "isolated engines".
 
-The problem with having shared and isolated engines is the fact that in both situations you can namespace stuff inside, but the behavior should be slightly different. While you would probably like to share helpers from shared engine, even if they're namespaced, you would not want that in case of isolated engine. To distinguish this situations you need to explicitly say that engine is isolated. Otherwise it will be shared. To make engine isolated, just use <code>namespace()</code> method in Engine definition:
+The problem with having shared and isolated engines is the fact that in both situations you can namespace stuff inside, but the behavior should be slightly different. While you would probably like to share helpers from shared engine, even if they're namespaced, you would not want that in case of isolated engine. To distinguish this situations you need to explicitly say that engine is isolated. Otherwise it will be shared. To make engine isolated, just use <code>isolate_namespace()</code> method in Engine definition:
 
 {% highlight ruby %}
 module Blog
   class Engine < Rails::Engine
-    namespace(Blog)
+    isolate_namespace(Blog)
   end
 end
 {% endhighlight %}
