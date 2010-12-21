@@ -4,13 +4,13 @@ layout: post
 categories: ['en']
 ---
 
-I finished my work on RubySOC a few months ago and I wanted to write that post quickly after that, but live, as usual, verified my plans. Unfortunately, after visiting a few great conferences I spent all my money, so I needed some time of hard work to pay all the debts (nevertheless, all those trips were really worth it, especially rubyconf, I really felt in love with New Orleans!). I want to apologize to all people that really waited for that, especially those who heard that this blog post will be written "very soon" ;) Now... let's cut emo talk and get to serious business!
+I finished my work on RubySOC a few months ago and I wanted to write this post quickly after that, but life, as usual, verified my plans. Unfortunately, attending a few great conferences left me with no money, so I needed some time of hard work to pay all the debts (nevertheless, all those trips were really worth it, especially rubyconf – I really felt in love with New Orleans!). I want to apologize to everyone who really waited for that, especially those who heard that this blog post will be written "very soon" ;) Now... let's cut the emo talk and get to serious business!
 
-I'll start with short introduction for those, who aren't familiar with mountable apps concept in Rails 3 (edge) yet. The goal for implementing mountable apps was to allow running 2 rails applications in one process. Unfortunately, that goal was not achieved and we stopped on simpler approach. If you want to create mountable application, you can use rails engines, which will be much more powerful in Rails 3.1. For list of major changes, please check my "last post on that topic":http://piotrsarnacki.com/2010/09/14/mountable-engines.
+I'll start with a short introduction for those, who aren't familiar with the concept of mountable apps in Rails 3 (edge) yet. The goal for implementing mountable apps was to allow running 2 rails applications in one process. Unfortunately, that goal was not achieved and we settled on a simpler approach. If you want to create a mountable application, you can use rails engines, which will be much more powerful in Rails 3.1. For the list of major changes, please check my "last post on that topic":http://piotrsarnacki.com/2010/09/14/mountable-engines.
 
-Although almost all of the changes made to engines were usable shortly after summer, setup of new engine suitable for mounting was really rough. Of course, there is a great gem "enginex":https://github.com/josevalim/enginex, by José, but at that time it only generated bare structure for any kind of rails extension and there were no things specific to mountable apps (as mountable apps haven't existed during the time of writing enginex). That's why I ported enginex to rails, with some changes that were needed to merge it to core, to make that task simpler.
+Although almost all of the changes made to engines were usable shortly after summer, the process of setting up a new engine, suitable for mounting, was really rough. Of course, there is a great gem, "enginex":https://github.com/josevalim/enginex, by José, but at that time it only generated bare structure for any kind of rails extension and there were no things specific to mountable apps (as mountable apps haven't existed during the time of writing enginex). That's why I ported enginex to rails, with some changes that were needed to merge it to the core, to make that task simpler.
 
-Let's start with the tutorial. First things first. As new APIs work only on rails edge, you need to get rails from github:
+Let's start with the tutorial. First things first. As the new APIs work only on rails edge, you need to get rails from github:
 
 {% highlight bash %}
 git clone https://github.com/rails/rails.git
@@ -18,11 +18,11 @@ cd rails
 bundle install
 {% endhighlight %}
 
-To generate any rails extension in rails 3.1 you can use <code>rails plugin new</code> command. It generates directory with lib directory, gemspec, tests and dummy application for testing. There are 2 really important things here:
+To generate any rails extension in rails 3.1 you can use <code>rails plugin new</code> command. It generates a directory with lib directory, gemspec, tests and dummy application for testing. There are 2 really important things here:
 * gemspec is automatically generated, unless you use <code>--skip-gemspec</code> option - I hope that this will help to move more people to gem plugins
 * dummy application, which by default lives in test/dummy - this is standard rails application that you can test your plugin
 
-To generate mountable engine, we can use:
+To generate a mountable engine, we can use:
 
 {% highlight bash %}
 bundle exec ./bin/rails plugin new ../blog --edge --mountable
@@ -30,9 +30,9 @@ cd ../blog
 bundle install
 {% endhighlight %}
 
-We need to add <code>--dev</code> or <code>--edge</code> option to ensure that Gemfile will point to rails edge version, either from local clone or github. I used edge here, cause it's better for most of you - you can get newest rails version with simple <code>bundle update</code>. Mountable option will add files that will come handy for developing mountable engine, such as: integration tests, <code>Blog::ApplicationController</code>, <code>config/routes.rb</code> and so on.
+We need to add <code>--dev</code> or <code>--edge</code> option to ensure that Gemfile will point to rails edge version, either from local clone or github. I used edge here, cause it's better for most of you - you can get newest rails version with simple <code>bundle update</code>. Mountable option will add files that will come in handy for developing a mountable engine, such as: integration tests, <code>Blog::ApplicationController</code>, <code>config/routes.rb</code> and so on.
 
-Let's see how does some key files look like.
+Let's see how the key files look like.
 
 Probably the most important file is <code>lib/blog/engine.rb</code>, which keeps definition of the engine:
 
@@ -44,7 +44,7 @@ module Blog
 end
 {% endhighlight %}
 
-The thing that differs from what we could see in Rails 3.0 engine, is <code>isolate_namespace</code> which makes engine isolated from host application. If you don't remember how does it work exactly, please check "the documentation":https://github.com/rails/rails/blob/master/railties/lib/rails/engine.rb#L210 or "my last post":http://piotrsarnacki.com/2010/09/14/mountable-engines.
+The thing that differs from what we could see in Rails 3.0 engine, is <code>isolate_namespace</code> which makes engine isolated from host application. If you don't remember how it works exactly, please check "the documentation":https://github.com/rails/rails/blob/master/railties/lib/rails/engine.rb#L210 or "my last post":http://piotrsarnacki.com/2010/09/14/mountable-engines.
 
 Next important thing is <code>config/routes.rb</code> file:
 
@@ -53,9 +53,9 @@ Blog::Engine.routes.draw do
 end
 {% endhighlight %}
 
-These are empty routes, but as you can see that belongs to engine, not to host application.
+These are empty routes, but as you can see, they belong to the engine, not to the host application.
 
-The last thing that you may not be familiar with is dummy application located in <code>test/dummy</code>. This is standard rails application that will be used to test engine, both with automated tests and manually during development. The nice thing about new plugin generator is that with <code>--mountable</code> option, it automatically mounts engine in <code>test/dummy/config/routes.rb</code>
+The last thing that you may not be familiar with is the dummy application located in <code>test/dummy</code>. This is a standard rails application that will be used to test engine, both with automated tests and manually during development. The nice thing about the new plugin generator is that with <code>--mountable</code> option, it automatically mounts engine in <code>test/dummy/config/routes.rb</code>
 
 {% highlight ruby %}
 Rails.application.routes.draw do
@@ -63,7 +63,7 @@ Rails.application.routes.draw do
 end
 {% endhighlight %}
 
-Ok, let's write some code! Or... actually don't write code, I'm too lazy, I will use scaffold generator:
+Ok, let's write some code! Or... actually don't write code, I'm too lazy, I'm gonna use scaffold generator:
 
 {% highlight bash %}
 rails g scaffold post title:string body:text
@@ -92,6 +92,6 @@ Engine's Rakefile includes all the tasks that are needed to manage database. Mig
 rails s
 {% endhighlight %}
 
-Now point your browser to "http://localhost:3000/blog/posts":http://localhost:3000/blog/posts. You should see working standard rails scaffold, the only difference is that it's namespaced with <code>/blog</code> path. It was easy, wasn't it?
+Now point your browser to "http://localhost:3000/blog/posts":http://localhost:3000/blog/posts. You should see the standard rails scaffold working – the only difference is that it's namespaced with <code>/blog</code> path. It was easy, wasn't it?
 
-As you can see, creating mountable application using engines is pretty easy. As for now, I haven't show any way to better integrate mountable application with host application (for example use User model from host application or add some configuration options to engine). It's on purpose ;) I haven't got time to develop anything good yet. You can start to play with it yourself! Don't forget to let me know if you come up with some good patterns.
+As you can see, creating a mountable application using engines is pretty straightforward. I haven't shown any way to better integrate a mountable application with the host application (e.g. using User model from the host application or adding some configuration options to the engine). It's on purpose ;) I haven't got time to develop anything good yet. You can start playing with it yourself! Be sure to let me know if you come up with some good patterns.
