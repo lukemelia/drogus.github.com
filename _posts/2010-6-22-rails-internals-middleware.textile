@@ -1,0 +1,8 @@
+--- 
+title: "Rails internals: Rack"
+layout: post
+categories: ['en']
+---
+In the "last post":http://piotrsarnacki.com/2010/06/18/rails-internals-railties/ I describe some of the core rails classes. There was a short part about building rack middlewares, but I think that a few more words can give more light on rack usage in Rails.
+
+First question that can come to mind is: what is a rack middleware? It's basically a rack application
