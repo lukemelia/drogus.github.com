@@ -130,7 +130,7 @@ The chances are that you will have some assets in your engine's public directory
 You can automatically create symlinks with a rake task:
 
 {% highlight bash %}
-rake ralties:create_symlinks
+rake railties:create_symlinks
 {% endhighlight %}
 
 If you want to change the default asset path, you can set it in <code>Engine</code> definition:
